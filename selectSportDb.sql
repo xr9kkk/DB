@@ -1,4 +1,5 @@
--- 1. Выбрать все данные о спортивных клубах. Результат отсортировать по названию в порядке обратном лексикографическому.
+-- 1. Выбрать все данные о спортивных клубах.
+-- Результат отсортировать по названию в порядке обратном лексикографическому.
 SELECT * FROM Club ORDER BY name DESC;
 
 -- 2. Выбрать данные о клубах старше 20 лет. Результат отсортировать по названию в лексикографическом порядке.
@@ -15,14 +16,19 @@ WHERE (last_name LIKE 'K%' OR last_name LIKE 'M%')
 ORDER BY birth_date DESC, last_name DESC, first_name DESC, middle_name DESC;
 
 -- 4. Выбрать фамилию и инициалы, дату рождения спортсменов, для которых в столбце место жительства есть символы «?», «_», «*», «&».	
-SELECT a.last_name, a.first_name, LEFT(a.middle_name, 1) as middle_initial, a.birth_date
+SELECT 
+    a.last_name, 
+    a.first_name, 
+    LEFT(a.middle_name, 1) as middle_initial, 
+    a.birth_date,
+    ct.name as city_name
 FROM Athlete a
 JOIN Club c ON a.club_id = c.club_id
 JOIN City ct ON c.city_id = ct.city_id
 WHERE ct.name LIKE '%?%' 
    OR ct.name LIKE '%*%' 
    OR ct.name LIKE '%&%' 
-   OR ct.name LIKE '%_%'
+   OR ct.name LIKE '%\_%' ESCAPE '\' --экранируем _ 
 ORDER BY a.birth_date;
 
 -- 5. Выбрать фамилии, имена, отчества спортсменов в возрасте от 18 до 21 года.
@@ -32,13 +38,15 @@ WHERE AGE(birth_date) BETWEEN INTERVAL '18 years' AND INTERVAL '21 years'
 ORDER BY last_name, first_name, middle_name;
 
 
--- 6. Выбрать все данные о соревнованиях с id равным 1, 3, 4, 7, 10. 
+-- 6. Выбрать все данные о соревнованиях с id равным 1, 3, 4, 7, 10.
+-- надо ли дописать вручную соревнования и айдишники сделать не через подзапрос, а вручную
 SELECT *
 FROM Tournament 
 WHERE tournament_id IN (1, 3, 4, 7, 10)
 ORDER BY tournament_id % 2, tournament_id;
 
 -- 7. Выбрать id_стадиона, у которого нет адреса в БД.
+-- venue_address - NOT NULL
 SELECT tournament_id
 FROM Tournament
 WHERE venue_address IS NULL OR venue_address = '';
@@ -154,14 +162,13 @@ SELECT
     t.name as tournament_name,
     t.start_date,
     t.end_date,
-    COUNT(tm.match_id) as match_count,
+    COUNT(m.match_id) as match_count,
     STRING_AGG(
         CONCAT(c1.name, ' vs ', c2.name, ' (', TO_CHAR(m.match_date, 'DD.MM.YYYY'), ')'), 
         ', ' ORDER BY m.match_date
     ) as match_list
 FROM Tournament t
-LEFT JOIN Tournament_Matches tm ON t.tournament_id = tm.tournament_id
-LEFT JOIN Match m ON tm.match_id = m.match_id
+LEFT JOIN Match m ON t.match_id = m.match_id
 LEFT JOIN Club c1 ON m.club1_id = c1.club_id
 LEFT JOIN Club c2 ON m.club2_id = c2.club_id
 WHERE EXTRACT(YEAR FROM t.start_date) = 2024
@@ -181,7 +188,7 @@ LEFT JOIN sponsor_person sp ON s.sponsor_id = sp.sponsor_id
 LEFT JOIN sponsor_org so ON s.sponsor_id = so.sponsor_id
 JOIN Sponsorship sps ON s.sponsor_id = sps.sponsor_id
 JOIN Club c ON sps.club_id = c.club_id
-WHERE c.name = 'Spartak'
+WHERE c.name = 'Bayern'
 GROUP BY s.sponsor_id, sponsor_name, first_name, middle_name;
 
 -- 20. Выбрать id, названия и адреса стадионов, на которых проходило более двух соревнований.
