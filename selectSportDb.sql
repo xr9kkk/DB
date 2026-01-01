@@ -1,19 +1,21 @@
 -- 1. Выбрать все данные о спортивных клубах.
 -- Результат отсортировать по названию в порядке обратном лексикографическому.
-SELECT * FROM Club ORDER BY name DESC;
+SELECT *
+FROM Club
+ORDER BY name DESC;
 
 -- 2. Выбрать данные о клубах старше 20 лет. Результат отсортировать по названию в лексикографическом порядке.
-SELECT * FROM Club 
+SELECT *
+FROM Club 
 WHERE foundation_date <= CURRENT_DATE - INTERVAL '20 years' 
 ORDER BY name ASC;
 
 -- 3. Выбрать фамилии, имена, отчества, даты рождения спортсменов.
 -- В результат должны войти спортсмены с фамилией, начинающейся на «К-» или «М-» и состоящей из 4 букв.
+-- через like ограничение на 4 буквы
 SELECT last_name, first_name, middle_name, birth_date 
 FROM Athlete 
-WHERE (last_name LIKE 'K%' OR last_name LIKE 'M%') 
-  AND LENGTH(last_name) = 4
-ORDER BY birth_date DESC, last_name DESC, first_name DESC, middle_name DESC;
+WHERE (last_name LIKE 'K___' OR last_name LIKE 'M___');
 
 -- 4. Выбрать фамилию и инициалы, дату рождения спортсменов, для которых в столбце место жительства есть символы «?», «_», «*», «&».	
 SELECT 
@@ -28,23 +30,22 @@ JOIN City ct ON c.city_id = ct.city_id
 WHERE ct.name LIKE '%?%' 
    OR ct.name LIKE '%*%' 
    OR ct.name LIKE '%&%' 
-   OR ct.name LIKE '%\_%' ESCAPE '\' --экранируем _ 
-ORDER BY a.birth_date;
+   OR ct.name LIKE '%\_%' ESCAPE '\'; --экранируем _ 
 
 -- 5. Выбрать фамилии, имена, отчества спортсменов в возрасте от 18 до 21 года.
 SELECT last_name, first_name, middle_name 
 FROM Athlete 
-WHERE AGE(birth_date) BETWEEN INTERVAL '18 years' AND INTERVAL '21 years'
-ORDER BY last_name, first_name, middle_name;
+WHERE AGE(birth_date) BETWEEN INTERVAL '18 years' AND INTERVAL '21 years';
 
 
 -- 6. Выбрать все данные о соревнованиях с id равным 1, 3, 4, 7, 10.
--- надо ли дописать вручную соревнования и айдишники сделать не через подзапрос, а вручную
+-- надо ли дописать вручную соревнования и айдишники сделать не через подзапрос?
 SELECT *
 FROM Tournament 
-WHERE tournament_id IN (1, 3, 4, 7, 10)
-ORDER BY tournament_id % 2, tournament_id;
+WHERE tournament_id IN (126, 132, 133, 127, 10);
 
+SELECT *
+FROM Tournament;
 -- 7. Выбрать id_стадиона, у которого нет адреса в БД.
 -- venue_address - NOT NULL
 SELECT tournament_id
@@ -81,32 +82,21 @@ SELECT
         WHEN EXTRACT(MONTH FROM birth_date) IN (6, 7, 8) THEN 'лето'
         WHEN EXTRACT(MONTH FROM birth_date) IN (9, 10, 11) THEN 'осень'
     END as season
-FROM Athlete
-ORDER BY 
-    CASE 
-        WHEN EXTRACT(MONTH FROM birth_date) IN (12, 1, 2) THEN 1
-        WHEN EXTRACT(MONTH FROM birth_date) IN (3, 4, 5) THEN 2
-        WHEN EXTRACT(MONTH FROM birth_date) IN (6, 7, 8) THEN 3
-        WHEN EXTRACT(MONTH FROM birth_date) IN (9, 10, 11) THEN 4
-    END,
-    LENGTH(last_name), LENGTH(first_name), LENGTH(middle_name);
+FROM Athlete;
 
 -- 11. Выбрать максимальный рост спортсмена.
-SELECT
-MAX(height) as max_height
+SELECT MAX(height) as max_height
 FROM Athlete;
 
 -- 12. Выбрать средний рост спортсменов, рожденных с 1995 по 2000 год.
-SELECT 
-    ROUND(AVG(height), 2) AS average_height
+SELECT ROUND(AVG(height), 2) AS average_height
 FROM Athlete
 WHERE EXTRACT(YEAR FROM birth_date) BETWEEN 1995 AND 2000;
 
 -- 13. Выбрать фамилию, имя, отчество спортсмена, год рождения, название спортивного клуба.
 SELECT a.last_name, a.first_name, a.middle_name, EXTRACT(YEAR FROM a.birth_date) as birth_year, c.name as club_name
 FROM Athlete a
-JOIN Club c ON a.club_id = c.club_id
-ORDER BY c.name, a.last_name;
+JOIN Club c ON a.club_id = c.club_id;
 
 -- 14. Выбрать фамилии, имени, отчество спортсменов мужского пола
 -- год рождения, название спортивного клуба, название разряда и дату присвоения разряда
@@ -129,17 +119,18 @@ LEFT JOIN Award aw ON a.athlete_id = aw.athlete_id
 LEFT JOIN Award_type at ON aw.award_type_id = at.award_type_id
 LEFT JOIN Match m ON (c.club_id = m.club1_id OR c.club_id = m.club2_id)
 LEFT JOIN Tournament t ON m.match_id = t.match_id
-WHERE a.gender = 'male'
-ORDER BY c.name DESC, a.height ASC, a.last_name ASC;
+WHERE a.gender = 'male';
 
 -- 15. Выбрать название спортивного клуба и количество спортсменов в нем.
+-- переписать без использования синтаксического сахара psql
 SELECT c.name as club_name, COUNT(a.athlete_id) as athlete_count
 FROM Club c
-LEFT JOIN Athlete a ON c.club_id = a.club_id
-GROUP BY c.club_id, c.name
+JOIN Athlete a ON c.club_id = a.club_id
+GROUP BY c.club_id
 ORDER BY athlete_count DESC;
 
 -- 16. Выбрать название спортивного клуба, количество спортсменов и количество работников в клубе.
+-- переписать без использования синтаксического сахара psql
 SELECT 
     c.name as club_name,
     COUNT(DISTINCT a.athlete_id) as athlete_count,
@@ -147,7 +138,7 @@ SELECT
 FROM Club c
 LEFT JOIN Athlete a ON c.club_id = a.club_id
 LEFT JOIN Employee e ON c.club_id = e.club_id
-GROUP BY c.club_id, c.name
+GROUP BY c.club_id
 ORDER BY athlete_count DESC;
 
 -- 17. Выбрать среднюю зарплату работников спортклуба X 
@@ -157,6 +148,7 @@ JOIN Club c ON e.club_id = c.club_id
 WHERE c.name = 'Bayern';
 
 -- 18. Выбрать название соревнования и количество игр, проводимых в прошлом году.
+-- отказываемся от стринг агг
 SELECT 
     t.tournament_id,
     t.name as tournament_name,
@@ -168,15 +160,16 @@ SELECT
         ', ' ORDER BY m.match_date
     ) as match_list
 FROM Tournament t
-LEFT JOIN Match m ON t.match_id = m.match_id
-LEFT JOIN Club c1 ON m.club1_id = c1.club_id
-LEFT JOIN Club c2 ON m.club2_id = c2.club_id
+JOIN Match m ON t.match_id = m.match_id
+JOIN Club c1 ON m.club1_id = c1.club_id
+JOIN Club c2 ON m.club2_id = c2.club_id
 WHERE EXTRACT(YEAR FROM t.start_date) = 2024
 GROUP BY t.tournament_id, t.name, t.start_date, t.end_date
 ORDER BY t.start_date;
 
 
--- 19. Выбрать id, фамилию, имя, отчество спонсора, общую сумму взноса спонсоров спортивного клуба X 
+-- 19. Выбрать id, фамилию, имя, отчество спонсора, общую сумму взноса спонсоров спортивного клуба X
+-- добавить данные фамилия имя
 SELECT 
     s.sponsor_id,
     COALESCE(sp.last_name, so.org_name) as sponsor_name,
@@ -202,6 +195,7 @@ HAVING COUNT(*) > 1
 ORDER BY tournament_count DESC;
 
 -- 21. Выбрать все данные о спортсменах мужского пола, имеющих два или более разряда.
+-- отказываемся от стринг агг
 SELECT 
     a.athlete_id,
     a.last_name,
@@ -225,6 +219,7 @@ JOIN Athlete a ON sp.last_name = a.last_name;
 
 
 -- 23. Выбрать id, фамилию и инициалы спортсменов и, если у спортсмена есть награды, то дату вручения и название.
+--слить фамилию инициалы
 SELECT 
     a.athlete_id,
     a.last_name,

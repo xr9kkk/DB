@@ -524,152 +524,6 @@ INSERT INTO Tournament (match_id, name, start_date, end_date, venue_name, prize_
  'Regional Championship', '2024-08-01 08:00:00', '2024-08-31 20:00:00', 
  'Central Stadium', 400000.00, 'Moscow, Petrovka Street');
 
- 
--- -- Теперь для всех спортсменов, у которых есть разряд "Candidate Master",
--- -- добавляем все предыдущие разряды с разными датами
--- INSERT INTO Rank (athlete_id, assignment_date, rank_title_id)
--- SELECT DISTINCT
---     r.athlete_id,
---     DATE(r.assignment_date - INTERVAL '1 year') as assignment_date,
---     rt_prev.rank_title_id
--- FROM Rank r
--- JOIN Rank_title rt ON r.rank_title_id = rt.rank_title_id
--- JOIN Rank_title rt_prev ON rt.previous_rank_id = rt_prev.rank_title_id
--- WHERE rt.rank_title = 'Candidate Master'
--- AND NOT EXISTS (
---     SELECT 1 FROM Rank r2 
---     WHERE r2.athlete_id = r.athlete_id 
---     AND r2.rank_title_id = rt_prev.rank_title_id
--- )
-
--- UNION ALL
-
--- -- Добавляем "Second Category" для тех, у кого есть "First Category"
--- SELECT DISTINCT
---     r.athlete_id,
---     DATE(r.assignment_date - INTERVAL '2 years') as assignment_date,
---     rt_second.rank_title_id
--- FROM Rank r
--- JOIN Rank_title rt ON r.rank_title_id = rt.rank_title_id
--- JOIN Rank_title rt_first ON rt.previous_rank_id = rt_first.rank_title_id
--- JOIN Rank_title rt_second ON rt_first.previous_rank_id = rt_second.rank_title_id
--- WHERE rt.rank_title = 'Candidate Master'
--- AND NOT EXISTS (
---     SELECT 1 FROM Rank r2 
---     WHERE r2.athlete_id = r.athlete_id 
---     AND r2.rank_title_id = rt_second.rank_title_id
--- )
-
--- UNION ALL
-
--- -- Добавляем "Third Category" для тех, у кого есть "Second Category"
--- SELECT DISTINCT
---     r.athlete_id,
---     DATE(r.assignment_date - INTERVAL '3 years') as assignment_date,
---     rt_third.rank_title_id
--- FROM Rank r
--- JOIN Rank_title rt ON r.rank_title_id = rt.rank_title_id
--- JOIN Rank_title rt_first ON rt.previous_rank_id = rt_first.rank_title_id
--- JOIN Rank_title rt_second ON rt_first.previous_rank_id = rt_second.rank_title_id
--- JOIN Rank_title rt_third ON rt_second.previous_rank_id = rt_third.rank_title_id
--- WHERE rt.rank_title = 'Candidate Master'
--- AND NOT EXISTS (
---     SELECT 1 FROM Rank r2 
---     WHERE r2.athlete_id = r.athlete_id 
---     AND r2.rank_title_id = rt_third.rank_title_id
--- );
-
--- WITH RECURSIVE rank_hierarchy AS (
---     -- Базовый случай: все текущие разряды спортсменов
---     SELECT 
---         r.athlete_id,
---         r.assignment_date,
---         r.rank_title_id,
---         rt.rank_title,
---         rt.previous_rank_id,
---         0 as level
---     FROM Rank r
---     JOIN Rank_title rt ON r.rank_title_id = rt.rank_title_id
-    
---     UNION ALL
-    
---     -- Рекурсивный шаг: добавляем предыдущие разряды
---     SELECT 
---         rh.athlete_id,
---         DATE(rh.assignment_date - INTERVAL '1 year'),
---         rt_prev.rank_title_id,
---         rt_prev.rank_title,
---         rt_prev.previous_rank_id,
---         rh.level + 1
---     FROM rank_hierarchy rh
---     JOIN Rank_title rt_prev ON rh.previous_rank_id = rt_prev.rank_title_id
---     WHERE rh.previous_rank_id IS NOT NULL
--- )
--- INSERT INTO Rank (athlete_id, assignment_date, rank_title_id)
--- SELECT DISTINCT
---     rh.athlete_id,
---     rh.assignment_date,
---     rh.rank_title_id
--- FROM rank_hierarchy rh
--- WHERE NOT EXISTS (
---     SELECT 1 FROM Rank r 
---     WHERE r.athlete_id = rh.athlete_id 
---     AND r.rank_title_id = rh.rank_title_id
--- )
--- ORDER BY rh.athlete_id, rh.assignment_date;
-
-
--- Third Category (3-й разряд) - базовый, не требует ничего
-UPDATE Rank_title SET previous_rank_id = NULL WHERE rank_title = 'Third Category';
-
--- Second Category (2-й разряд) - требует 3-й разряд как предыдущий
-UPDATE Rank_title 
-SET previous_rank_id = (SELECT rank_title_id FROM Rank_title WHERE rank_title = 'Third Category') 
-WHERE rank_title = 'Second Category';
-
--- First Category (1-й разряд) - требует 2-й разряд как предыдущий
-UPDATE Rank_title 
-SET previous_rank_id = (SELECT rank_title_id FROM Rank_title WHERE rank_title = 'Second Category') 
-WHERE rank_title = 'First Category';
-
--- Candidate Master (КМС) - требует 1-й разряд как предыдущий
-UPDATE Rank_title 
-SET previous_rank_id = (SELECT rank_title_id FROM Rank_title WHERE rank_title = 'First Category') 
-WHERE rank_title = 'Candidate Master';
-
--- Master of Sports (МС) - требует КМС как предыдущий
-UPDATE Rank_title 
-SET previous_rank_id = (SELECT rank_title_id FROM Rank_title WHERE rank_title = 'Candidate Master') 
-WHERE rank_title = 'Master of Sports';
-
--- International Master (МСМК) - требует МС как предыдущий
-UPDATE Rank_title 
-SET previous_rank_id = (SELECT rank_title_id FROM Rank_title WHERE rank_title = 'Master of Sports') 
-WHERE rank_title = 'International Master';
-
--- Grandmaster (ЗМС) - требует МСМК как предыдущий
-UPDATE Rank_title 
-SET previous_rank_id = (SELECT rank_title_id FROM Rank_title WHERE rank_title = 'International Master') 
-WHERE rank_title = 'Grandmaster';
-
-SELECT 
-    rt.rank_title as current_rank,
-    rt_prev.rank_title as requires_rank
-FROM Rank_title rt
-LEFT JOIN Rank_title rt_prev ON rt.previous_rank_id = rt_prev.rank_title_id
-ORDER BY 
-    CASE rt.rank_title
-        WHEN 'Grandmaster' THEN 1
-        WHEN 'International Master' THEN 2
-        WHEN 'Master of Sports' THEN 3
-        WHEN 'Candidate Master' THEN 4
-        WHEN 'First Category' THEN 5
-        WHEN 'Second Category' THEN 6
-        WHEN 'Third Category' THEN 7
-        ELSE 8
-    END;
-
-
 INSERT INTO Rank (athlete_id, assignment_date, rank_title_id)
 SELECT DISTINCT
     r.athlete_id,
@@ -734,4 +588,39 @@ AND NOT EXISTS (
     WHERE r2.athlete_id = r.athlete_id 
     AND r2.rank_title_id = rt4.previous_rank_id
 );
+
+
+-- Third Category (3-й разряд) - базовый, не требует ничего
+UPDATE Rank_title SET previous_rank_id = NULL WHERE rank_title = 'Third Category';
+
+-- Second Category (2-й разряд) - требует 3-й разряд как предыдущий
+UPDATE Rank_title 
+SET previous_rank_id = (SELECT rank_title_id FROM Rank_title WHERE rank_title = 'Third Category') 
+WHERE rank_title = 'Second Category';
+
+-- First Category (1-й разряд) - требует 2-й разряд как предыдущий
+UPDATE Rank_title 
+SET previous_rank_id = (SELECT rank_title_id FROM Rank_title WHERE rank_title = 'Second Category') 
+WHERE rank_title = 'First Category';
+
+-- Candidate Master (КМС) - требует 1-й разряд как предыдущий
+UPDATE Rank_title 
+SET previous_rank_id = (SELECT rank_title_id FROM Rank_title WHERE rank_title = 'First Category') 
+WHERE rank_title = 'Candidate Master';
+
+-- Master of Sports (МС) - требует КМС как предыдущий
+UPDATE Rank_title 
+SET previous_rank_id = (SELECT rank_title_id FROM Rank_title WHERE rank_title = 'Candidate Master') 
+WHERE rank_title = 'Master of Sports';
+
+-- International Master (МСМК) - требует МС как предыдущий
+UPDATE Rank_title 
+SET previous_rank_id = (SELECT rank_title_id FROM Rank_title WHERE rank_title = 'Master of Sports') 
+WHERE rank_title = 'International Master';
+
+-- Grandmaster (ЗМС) - требует МСМК как предыдущий
+UPDATE Rank_title 
+SET previous_rank_id = (SELECT rank_title_id FROM Rank_title WHERE rank_title = 'International Master') 
+WHERE rank_title = 'Grandmaster';
+
 	
