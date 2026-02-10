@@ -129,6 +129,13 @@ JOIN Athlete a ON c.club_id = a.club_id
 GROUP BY c.club_id
 ORDER BY athlete_count DESC;
 
+-- переписанный вариант
+SELECT c.name AS club_name, COUNT (a.athlete_id) AS athlete_count
+FROM Club c
+JOIN Athlete a ON c.club_id = a.club_id
+GROUP BY c.club_id, c.name
+ORDER BY COUNT (a.athlete_id);
+
 -- 16. Выбрать название спортивного клуба, количество спортсменов и количество работников в клубе.
 -- переписать без использования синтаксического сахара psql
 SELECT 
@@ -140,6 +147,16 @@ LEFT JOIN Athlete a ON c.club_id = a.club_id
 LEFT JOIN Employee e ON c.club_id = e.club_id
 GROUP BY c.club_id
 ORDER BY athlete_count DESC;
+-- переписанный вариант
+SELECT 
+    c.name AS club_name,
+    COUNT(DISTINCT a.athlete_id) AS athlete_count,
+    COUNT(DISTINCT e.employee_id) AS employee_count
+FROM Club c
+LEFT JOIN Athlete a ON c.club_id = a.club_id
+LEFT JOIN Employee e ON c.club_id = e.club_id
+GROUP BY c.club_id, c.name
+ORDER BY COUNT(DISTINCT a.athlete_id);
 
 -- 17. Выбрать среднюю зарплату работников спортклуба X 
 SELECT AVG(e.salary) as average_salary
@@ -166,10 +183,26 @@ JOIN Club c2 ON m.club2_id = c2.club_id
 WHERE EXTRACT(YEAR FROM t.start_date) = 2024
 GROUP BY t.tournament_id, t.name, t.start_date, t.end_date
 ORDER BY t.start_date;
+-- переписанный вариант
+SELECT 
+    t.tournament_id,
+    t.name as tournament_name,
+    t.start_date,
+    t.end_date,
+    COUNT(m.match_id) as match_count
+FROM Tournament t
+JOIN Match m ON t.match_id = m.match_id
+JOIN Club c1 ON m.club1_id = c1.club_id
+JOIN Club c2 ON m.club2_id = c2.club_id
+WHERE EXTRACT(YEAR FROM t.start_date) = EXTRACT (YEAR FROM CURRENT_DATE) - 1
+GROUP BY t.tournament_id, t.name, t.start_date, t.end_date
+ORDER BY t.start_date;
 
 
 -- 19. Выбрать id, фамилию, имя, отчество спонсора, общую сумму взноса спонсоров спортивного клуба X
 -- добавить данные фамилия имя
+переделать
+если человек указать в одном столбце нейм, если организация то название организации
 SELECT 
     s.sponsor_id,
     COALESCE(sp.last_name, so.org_name) as sponsor_name,
@@ -210,6 +243,20 @@ GROUP BY a.athlete_id, a.last_name, a.first_name
 HAVING COUNT(r.rank_id) >= 2
 ORDER BY rank_count DESC;
 
+--переписанный вариант
+SELECT 
+    a.athlete_id,
+    a.last_name,
+    a.first_name,
+    COUNT(r.rank_id) as rank_count
+FROM Athlete a
+JOIN Rank r ON a.athlete_id = r.athlete_id
+JOIN Rank_title rt ON r.rank_title_id = rt.rank_title_id
+WHERE a.gender = 'male'
+GROUP BY a.athlete_id, a.last_name, a.first_name
+HAVING COUNT(r.rank_id) >= 2
+ORDER BY COUNT(r.rank_id) DESC;
+
 -- 22. Выбрать пары однофамильцев среди спонсоров и спортсменов
 SELECT 
     sp.last_name as sponsor_last_name,
@@ -231,28 +278,33 @@ FROM Athlete a
 LEFT JOIN Award aw ON a.athlete_id = aw.athlete_id
 LEFT JOIN Award_type at ON aw.award_type_id = at.award_type_id
 ORDER BY a.last_name, a.first_name;
+--переписанный вариант
+SELECT 
+    a.athlete_id,
+    a.last_name || ' ' || LEFT(a.first_name, 1) || '.' || 
+    CASE 
+        WHEN a.middle_name IS NOT NULL AND a.middle_name != '' 
+        THEN LEFT(a.middle_name, 1) || '.' 
+        ELSE '' 
+    END as full_name,
+    aw.award_date,
+    at.award_name
+FROM Athlete a
+LEFT JOIN Award aw ON a.athlete_id = aw.athlete_id
+LEFT JOIN Award_type at ON aw.award_type_id = at.award_type_id
+ORDER BY a.last_name, a.first_name;
 
 -- 24. Выбрать названия всех стадионов и, если на стадионе в прошлом году проходили соревнования, то количество игр.
+разные стадионы не должны входить в одну группу
 SELECT 
     t.venue_name,
     COUNT(DISTINCT t.tournament_id) as tournament_count,
     COUNT(m.match_id) as match_count
 FROM Tournament t
 LEFT JOIN Match m ON t.match_id = m.match_id
-WHERE EXTRACT(YEAR FROM t.start_date) = EXTRACT(YEAR FROM CURRENT_DATE) - 1
+WHERE EXTRACT(YEAR FROM t.start_date) = EXTRACT (YEAR FROM CURRENT_DATE) - 1
 GROUP BY t.venue_name
-UNION ALL
-SELECT 
-    t.venue_name,
-    0 as tournament_count,
-    0 as match_count
-FROM Tournament t
-WHERE NOT EXISTS (
-    SELECT 1 FROM Tournament t2 
-    WHERE t2.venue_name = t.venue_name 
-    AND EXTRACT(YEAR FROM t2.start_date) = EXTRACT(YEAR FROM CURRENT_DATE) - 1
-)
-GROUP BY t.venue_name;
+ORDER BY tournament_count DESC, match_count DESC;
 
 -- 25. Для каждого спортивного клуба выбрать названия всех соревнований
 -- Результат отсортировать по названию клуба и соревнования
@@ -308,6 +360,7 @@ WHERE r.assignment_date = (
 ORDER BY a.last_name, a.first_name;
 
 -- 30. Выбрать id и название клуба без спортсменов.
+переделать с exists
 SELECT 
     c.club_id,
     c.name as club_name
@@ -317,6 +370,7 @@ WHERE a.athlete_id IS NULL
 ORDER BY c.name;
 
 -- 31. Выбрать название стадиона, на котором не проводилось ни одной игры в текущем году.
+переделать с exists
 SELECT DISTINCT t.venue_name
 FROM Tournament t
 LEFT JOIN Match m ON t.match_id = m.match_id 
@@ -324,7 +378,9 @@ LEFT JOIN Match m ON t.match_id = m.match_id
 WHERE m.match_id IS NULL;
 
 -- 32. Выбрать id и названия стадионов, на которых проходило
--- больше двух соревнований, по три игры в каждом. 
+-- больше двух соревнований, по три игры в каждом.
+переписать для использования городов с одинаковым названием стадионов и переписать чтобы в одном соревновании было три игры и при этом
+соревнований больше двух
 SELECT 
     t.venue_name,
     COUNT(DISTINCT t.tournament_id) as tournament_count,
@@ -335,7 +391,8 @@ GROUP BY t.venue_name
 HAVING COUNT(DISTINCT t.tournament_id) > 2 
    AND COUNT(DISTINCT m.match_id) >= 3;
 
--- 33. Выбрать название спортивного клуба, который принял участие во всех соревнованиях, имеющихся в БД. 
+-- 33. Выбрать название спортивного клуба, который принял участие во всех соревнованиях, имеющихся в БД.
+придумать второй вариант без NOT EXISTS (можно попробовать через count)
 SELECT c.name as club_name
 FROM Club c
 WHERE NOT EXISTS (
@@ -350,7 +407,8 @@ WHERE NOT EXISTS (
 );
 
 -- 34. Выбрать фамилию, имя, отчество спонсора, внесшего
--- максимальную сумму в прошлом году. 
+-- максимальную сумму в прошлом году.
+придумать вариант без лимит
 SELECT 
     spp.last_name,
     spp.first_name,
@@ -378,10 +436,11 @@ JOIN Award_type at ON aw.award_type_id = at.award_type_id
 JOIN Club c ON a.club_id = c.club_id
 WHERE c.name = 'Spartak'
 GROUP BY a.athlete_id, a.last_name, a.first_name, a.middle_name, at.award_name
-HAVING COUNT(*) >= 2
+HAVING COUNT(*) = 2
 ORDER BY award_count DESC;
 
 -- 36. Выбрать фамилии, имена, отчества спортсменов клуба с наибольшим количеством спортсменов.
+переписать альтернативно
 SELECT 
     a.last_name,
     a.first_name,

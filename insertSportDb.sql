@@ -98,6 +98,15 @@ INSERT INTO Club (name, city_id, foundation_date) VALUES
 ('Club_Normal', (SELECT city_id FROM City WHERE name = 'NormalCity'), '2005-06-06')
 ON CONFLICT(name, city_id) DO NOTHING;
 
+-- Создание клуба без спортсменов
+INSERT INTO Club (name, city_id, foundation_date) VALUES 
+('Empty Club', (SELECT city_id FROM City WHERE name = 'Moscow'), '2020-01-01'),
+('No Athletes FC', (SELECT city_id FROM City WHERE name = 'Berlin'), '2019-03-15'),
+('Solo Club', (SELECT city_id FROM City WHERE name = 'Tokyo'), '2021-07-20'),
+('Test Team', (SELECT city_id FROM City WHERE name = 'London'), '2022-11-10'),
+('Vacant VC', (SELECT city_id FROM City WHERE name = 'Paris'), '2023-05-05')
+ON CONFLICT(name, city_id) DO NOTHING;
+
 -- Owner
 INSERT INTO Owner (last_name, first_name, middle_name, phone, gender, city_id) VALUES 
 ('Ivanov', 'Alexey', 'Petrovich', '+79161234567', 'male', (SELECT city_id FROM City WHERE name = 'Moscow')),
@@ -223,6 +232,84 @@ INSERT INTO Sponsorship (club_id, sponsor_id, donation_date, donation_amount, pu
 ((SELECT club_id FROM Club WHERE name = 'CSKA'), (SELECT sponsor_id FROM Sponsor WHERE contact_phone = '+74957654321'), '2024-02-10', 400000.00, 'Medical Supplies'),
 ((SELECT club_id FROM Club WHERE name = 'Bayern'), (SELECT sponsor_id FROM Sponsor WHERE contact_phone = '+861087654321'), '2024-03-12', 550000.00, 'Technology');
 
+
+-- Sponsorship 
+INSERT INTO Sponsorship (club_id, sponsor_id, donation_date, donation_amount, purpose) VALUES 
+-- Январь 2025
+((SELECT club_id FROM Club WHERE name = 'Spartak'), 
+ (SELECT sponsor_id FROM Sponsor WHERE contact_phone = '+74951234567'), 
+ '2025-01-10', 550000.00, 'Winter Equipment'),
+
+((SELECT club_id FROM Club WHERE name = 'Lakers'), 
+ (SELECT sponsor_id FROM Sponsor WHERE contact_phone = '+13105559876'), 
+ '2025-01-15', 800000.00, 'New Year Tournament'),
+
+-- Февраль 2025
+((SELECT club_id FROM Club WHERE name = 'CSKA'), 
+ (SELECT sponsor_id FROM Sponsor WHERE contact_phone = '+79167654321'), 
+ '2025-02-05', 450000.00, 'Training Camp'),
+
+((SELECT club_id FROM Club WHERE name = 'Bayern'), 
+ (SELECT sponsor_id FROM Sponsor WHERE contact_phone = '+33198765499'), 
+ '2025-02-14', 350000.00, 'Youth Program'),
+
+-- Март 2025
+((SELECT club_id FROM Club WHERE name = 'Dynamo'), 
+ (SELECT sponsor_id FROM Sponsor WHERE contact_phone = '+74951234567'), 
+ '2025-03-10', 600000.00, 'Spring Equipment'),
+
+((SELECT club_id FROM Club WHERE name = 'London Royals'), 
+ (SELECT sponsor_id FROM Sponsor WHERE contact_phone = '+442076543210'), 
+ '2025-03-20', 950000.00, 'Facility Upgrade'),
+
+-- Апрель 2025
+((SELECT club_id FROM Club WHERE name = 'PSG'), 
+ (SELECT sponsor_id FROM Sponsor WHERE contact_phone = '+33143219876'), 
+ '2025-04-05', 1200000.00, 'Major Renovation'),
+
+-- Май 2025 (крупнейшие пожертвования)
+((SELECT club_id FROM Club WHERE name = 'Tokyo Giants'), 
+ (SELECT sponsor_id FROM Sponsor WHERE contact_phone = '+81398765432'), 
+ '2025-05-01', 500000.00, 'Anniversary Event'),
+
+((SELECT club_id FROM Club WHERE name = 'Spartak'), 
+ (SELECT sponsor_id FROM Sponsor WHERE contact_phone = '+74957654321'), 
+ '2025-05-15', 700000.00, 'Championship Preparation'),
+
+-- Июнь 2025
+((SELECT club_id FROM Club WHERE name = 'Lakers'), 
+ (SELECT sponsor_id FROM Sponsor WHERE contact_phone = '+13105559876'), 
+ '2025-06-10', 850000.00, 'Summer Training'),
+
+-- Июль 2025
+((SELECT club_id FROM Club WHERE name = 'Bayern'), 
+ (SELECT sponsor_id FROM Sponsor WHERE contact_phone = '+861087654321'), 
+ '2025-07-22', 650000.00, 'Technology Upgrade'),
+
+-- Август 2025
+((SELECT club_id FROM Club WHERE name = 'CSKA'), 
+ (SELECT sponsor_id FROM Sponsor WHERE contact_phone = '+79151112233'), 
+ '2025-08-30', 300000.00, 'Medical Equipment'),
+
+-- Сентябрь 2025 (самое крупное пожертвование - для теста LIMIT 1)
+((SELECT club_id FROM Club WHERE name = 'London Royals'), 
+ (SELECT sponsor_id FROM Sponsor WHERE contact_phone = '+44201112233'), 
+ '2025-09-18', 1500000.00, 'Stadium Construction'),
+
+-- Октябрь 2025
+((SELECT club_id FROM Club WHERE name = 'Dynamo'), 
+ (SELECT sponsor_id FROM Sponsor WHERE contact_phone = '+33143219876'), 
+ '2025-10-05', 550000.00, 'Autumn Tournament'),
+
+-- Ноябрь 2025
+((SELECT club_id FROM Club WHERE name = 'PSG'), 
+ (SELECT sponsor_id FROM Sponsor WHERE contact_phone = '+55119887766'), 
+ '2025-11-20', 480000.00, 'Community Program'),
+
+-- Декабрь 2025
+((SELECT club_id FROM Club WHERE name = 'Spartak'), 
+ (SELECT sponsor_id FROM Sponsor WHERE contact_phone = '+13105559900'), 
+ '2025-12-15', 420000.00, 'Year-End Support');
 -- Employee
 INSERT INTO Employee (club_id, last_name, first_name, middle_name, gender, phone, salary, position_id) VALUES 
 ((SELECT club_id FROM Club WHERE name = 'Spartak'), 'Sidorov', 'Andrey', 'Nikolaevich', 'male', '+79161112233', 80000.00, (SELECT position_id FROM Position WHERE position_type = 'Coach')),
@@ -623,4 +710,114 @@ UPDATE Rank_title
 SET previous_rank_id = (SELECT rank_title_id FROM Rank_title WHERE rank_title = 'International Master') 
 WHERE rank_title = 'Grandmaster';
 
-	
+
+-- Матчи за 2025 год (прошлый год)
+INSERT INTO Match (club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT club_id FROM Club WHERE name = 'Spartak'), 
+ (SELECT club_id FROM Club WHERE name = 'CSKA'), 
+ '2025-03-15', '19:00:00', 2, 1),
+
+((SELECT club_id FROM Club WHERE name = 'Lakers'), 
+ (SELECT club_id FROM Club WHERE name = 'Bayern'), 
+ '2025-03-16', '21:00:00', 3, 2),
+
+((SELECT club_id FROM Club WHERE name = 'Spartak'), 
+ (SELECT club_id FROM Club WHERE name = 'Bayern'), 
+ '2025-03-18', '18:30:00', 1, 3),
+
+((SELECT club_id FROM Club WHERE name = 'Real Madrid'), 
+ (SELECT club_id FROM Club WHERE name = 'Barcelona'), 
+ '2025-04-10', '20:45:00', 2, 2),
+
+((SELECT club_id FROM Club WHERE name = 'Zenit'), 
+ (SELECT club_id FROM Club WHERE name = 'Dynamo'), 
+ '2025-05-05', '17:00:00', 1, 0),
+
+((SELECT club_id FROM Club WHERE name = 'CSKA'), 
+ (SELECT club_id FROM Club WHERE name = 'Lakers'), 
+ '2025-06-20', '19:30:00', 0, 4),
+
+((SELECT club_id FROM Club WHERE name = 'Bayern'), 
+ (SELECT club_id FROM Club WHERE name = 'Real Madrid'), 
+ '2025-07-15', '21:15:00', 3, 1),
+
+((SELECT club_id FROM Club WHERE name = 'Barcelona'), 
+ (SELECT club_id FROM Club WHERE name = 'Spartak'), 
+ '2025-08-22', '18:00:00', 2, 1),
+
+((SELECT club_id FROM Club WHERE name = 'Dynamo'), 
+ (SELECT club_id FROM Club WHERE name = 'CSKA'), 
+ '2025-09-30', '16:45:00', 1, 1),
+
+((SELECT club_id FROM Club WHERE name = 'Zenit'), 
+ (SELECT club_id FROM Club WHERE name = 'Bayern'), 
+ '2025-10-12', '20:00:00', 0, 2);
+
+ -- Матчи за 2026 год (текущий год)
+INSERT INTO Match (club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT club_id FROM Club WHERE name = 'Spartak'), 
+ (SELECT club_id FROM Club WHERE name = 'Dynamo'), 
+ '2026-01-10', '18:00:00', 2, 0),
+
+((SELECT club_id FROM Club WHERE name = 'CSKA'), 
+ (SELECT club_id FROM Club WHERE name = 'Zenit'), 
+ '2026-02-15', '19:30:00', 1, 1),
+
+((SELECT club_id FROM Club WHERE name = 'Real Madrid'), 
+ (SELECT club_id FROM Club WHERE name = 'Bayern'), 
+ '2026-02-28', '21:00:00', 3, 2),
+
+((SELECT club_id FROM Club WHERE name = 'Lakers'), 
+ (SELECT club_id FROM Club WHERE name = 'Barcelona'), 
+ '2026-03-08', '17:45:00', 2, 3),
+
+((SELECT club_id FROM Club WHERE name = 'Bayern'), 
+ (SELECT club_id FROM Club WHERE name = 'CSKA'), 
+ '2026-03-25', '20:15:00', 4, 0),
+
+((SELECT club_id FROM Club WHERE name = 'Dynamo'), 
+ (SELECT club_id FROM Club WHERE name = 'Real Madrid'), 
+ '2026-04-05', '19:00:00', 1, 2),
+
+((SELECT club_id FROM Club WHERE name = 'Barcelona'), 
+ (SELECT club_id FROM Club WHERE name = 'Zenit'), 
+ '2026-04-18', '18:30:00', 3, 1),
+
+((SELECT club_id FROM Club WHERE name = 'Lakers'), 
+ (SELECT club_id FROM Club WHERE name = 'Spartak'), 
+ '2026-05-20', '21:00:00', 2, 1),
+
+((SELECT club_id FROM Club WHERE name = 'Zenit'), 
+ (SELECT club_id FROM Club WHERE name = 'Real Madrid'), 
+ '2026-06-10', '20:45:00', 0, 0),
+
+((SELECT club_id FROM Club WHERE name = 'CSKA'), 
+ (SELECT club_id FROM Club WHERE name = 'Barcelona'), 
+ '2026-07-01', '19:15:00', 1, 3);
+
+ -- Турниры за 2025 год (прошлый год) - ссылаемся на матчи 2025
+INSERT INTO Tournament (match_id, name, start_date, end_date, venue_name, prize_fund, venue_address) VALUES
+((SELECT match_id FROM Match WHERE match_date = '2025-03-15' AND club1_id = (SELECT club_id FROM Club WHERE name = 'Spartak')),
+ 'Spring International 2025', '2025-03-01 09:00:00', '2025-03-31 22:00:00', 'Luzhniki Stadium', 850000.00, 'Moscow, Luzhniki Street, 24'),
+
+((SELECT match_id FROM Match WHERE match_date = '2025-04-10' AND club1_id = (SELECT club_id FROM Club WHERE name = 'Real Madrid')),
+ 'El Clasico Cup 2025', '2025-04-01 10:00:00', '2025-04-30 21:00:00', 'Santiago Bernabeu', 1200000.00, 'Madrid, Av. de Concha Espina, 1'),
+
+((SELECT match_id FROM Match WHERE match_date = '2025-07-15' AND club1_id = (SELECT club_id FROM Club WHERE name = 'Bayern')),
+ 'Summer Championship 2025', '2025-07-01 08:00:00', '2025-07-31 20:00:00', 'Allianz Arena', 950000.00, 'Munich, Werner-Heisenberg-Allee, 25'),
+
+((SELECT match_id FROM Match WHERE match_date = '2025-09-30' AND club1_id = (SELECT club_id FROM Club WHERE name = 'Dynamo')),
+ 'Autumn Tournament 2025', '2025-09-15 09:00:00', '2025-10-15 22:00:00', 'VTB Arena', 700000.00, 'Moscow, Leningradsky Prospect, 36'),
+
+-- Турниры за 2026 год (текущий год) - ссылаемся на матчи 2026
+((SELECT match_id FROM Match WHERE match_date = '2026-01-10' AND club1_id = (SELECT club_id FROM Club WHERE name = 'Spartak')),
+ 'Winter Cup 2026', '2026-01-01 09:00:00', '2026-01-31 22:00:00', 'Otkrytie Arena', 900000.00, 'Moscow, Volgogradsky Prospect, 69'),
+
+((SELECT match_id FROM Match WHERE match_date = '2026-02-28' AND club1_id = (SELECT club_id FROM Club WHERE name = 'Real Madrid')),
+ 'Champions League 2026', '2026-02-15 10:00:00', '2026-03-15 21:00:00', 'Allianz Arena', 1500000.00, 'Munich, Werner-Heisenberg-Allee, 25'),
+
+((SELECT match_id FROM Match WHERE match_date = '2026-04-18' AND club1_id = (SELECT club_id FROM Club WHERE name = 'Barcelona')),
+ 'Spring Classic 2026', '2026-04-01 08:00:00', '2026-04-30 20:00:00', 'Camp Nou', 1100000.00, 'Barcelona, C. d''Aristides Maillol, 12'),
+
+((SELECT match_id FROM Match WHERE match_date = '2026-06-10' AND club1_id = (SELECT club_id FROM Club WHERE name = 'Zenit')),
+ 'Summer International 2026', '2026-06-01 09:00:00', '2026-06-30 22:00:00', 'Gazprom Arena', 800000.00, 'Saint Petersburg, Football Alley, 1');
