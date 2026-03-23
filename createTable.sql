@@ -71,7 +71,7 @@ CREATE TABLE sponsor_org (
     sponsor_id INTEGER PRIMARY KEY REFERENCES sponsor(sponsor_id),
     inn VARCHAR(12) NOT NULL UNIQUE,
     org_name VARCHAR(100) NOT NULL,
-    phone INTEGER NOT NULL
+    phone TEXT NOT NULL
 );
 
 DROP TABLE IF EXISTS sponsor_person CASCADE;

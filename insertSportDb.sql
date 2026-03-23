@@ -568,50 +568,6 @@ INSERT INTO Match (club1_id, club2_id, match_date, match_time, result_1, result_
 ((SELECT club_id FROM Club WHERE name = 'Ural'), (SELECT club_id FROM Club WHERE name = 'Krasnodar FC'), '2024-09-15', '17:45:00', 1, 1),
 ((SELECT club_id FROM Club WHERE name = 'CSKA'), (SELECT club_id FROM Club WHERE name = 'Spartak'), '2024-10-20', '20:00:00', 2, 2);
 
--- Tournament
-INSERT INTO Tournament (match_id, name, start_date, end_date, venue_name, prize_fund, venue_address) VALUES
-((SELECT match_id FROM Match WHERE club1_id = (SELECT club_id FROM Club WHERE name = 'Spartak') 
-  AND club2_id = (SELECT club_id FROM Club WHERE name = 'Dynamo') 
-  AND match_date = '2024-05-10'), 
- 'Spring Cup', '2024-05-01 09:00:00', '2024-05-31 22:00:00', 'Olympic Stadium', 750000.00, 'Moscow, Olympiysky Prospect'),
- 
-((SELECT match_id FROM Match WHERE club1_id = (SELECT club_id FROM Club WHERE name = 'PSG') 
-  AND club2_id = (SELECT club_id FROM Club WHERE name = 'London Royals') 
-  AND match_date = '2024-05-15'), 
- 'Summer Championship', '2024-06-01 10:00:00', '2024-08-31 23:00:00', 'National Arena', 1250000.00, 'Paris, Avenue des Champs-Élysées'),
- 
-((SELECT match_id FROM Match WHERE club1_id = (SELECT club_id FROM Club WHERE name = 'CSKA') 
-  AND club2_id = (SELECT club_id FROM Club WHERE name = 'Ural') 
-  AND match_date = '2024-06-01'), 
- 'Autumn League', '2024-09-01 08:00:00', '2024-11-30 21:00:00', 'Central Stadium', 950000.00, 'Moscow, Petrovka Street'),
- 
-((SELECT match_id FROM Match WHERE club1_id = (SELECT club_id FROM Club WHERE name = 'Lakers') 
-  AND club2_id = (SELECT club_id FROM Club WHERE name = 'Houston Rockets') 
-  AND match_date = '2024-06-10'), 
- 'NBA Summer League', '2024-06-01 11:00:00', '2024-08-31 23:59:00', 'Madison Square Garden', 1800000.00, 'New York, 4 Pennsylvania Plaza'),
- 
-((SELECT match_id FROM Match WHERE club1_id = (SELECT club_id FROM Club WHERE name = 'Bayern') 
-  AND club2_id = (SELECT club_id FROM Club WHERE name = 'Tokyo Giants') 
-  AND match_date = '2024-11-08'), 
- 'Winter Classic', '2024-12-01 09:00:00', '2024-12-31 20:00:00', 'Allianz Arena', 800000.00, 'Munich, Werner-Heisenberg-Allee'),
- 
--- Дополнительные турниры
-((SELECT match_id FROM Match LIMIT 1 OFFSET 5), 
- 'Autumn Championship', '2024-09-01 10:00:00', '2024-09-30 22:00:00', 
- 'Olympic Stadium', 500000.00, 'Moscow, Olympiysky Prospect'),
- 
-((SELECT match_id FROM Match LIMIT 1 OFFSET 6), 
- 'Winter League', '2024-12-01 09:00:00', '2024-12-20 21:00:00', 
- 'Olympic Stadium', 300000.00, 'Moscow, Olympiysky Prospect'),
- 
-((SELECT match_id FROM Match LIMIT 1 OFFSET 7), 
- 'European Cup', '2024-07-01 11:00:00', '2024-07-31 23:00:00', 
- 'National Arena', 900000.00, 'Paris, Avenue des Champs-Élysées'),
- 
-((SELECT match_id FROM Match LIMIT 1 OFFSET 8), 
- 'Regional Championship', '2024-08-01 08:00:00', '2024-08-31 20:00:00', 
- 'Central Stadium', 400000.00, 'Moscow, Petrovka Street');
-
 INSERT INTO Rank (athlete_id, assignment_date, rank_title_id)
 SELECT DISTINCT
     r.athlete_id,
@@ -825,17 +781,6 @@ ON CONFLICT(name, city_id) DO NOTHING;
 
 
 
--- Сначала создаем турниры (они получат свои ID автоматически)
-INSERT INTO Tournament (name, start_date, end_date, venue_name, prize_fund, venue_address) VALUES 
-('Spring Cup', '2024-05-01 09:00:00', '2024-05-31 22:00:00', 'Olympic Stadium', 750000.00, 'Moscow, Olympiysky Prospect'),
-('Summer Championship', '2024-06-01 10:00:00', '2024-08-31 23:00:00', 'National Arena', 1250000.00, 'Paris, Avenue des Champs-Élysées'),
-('Autumn League', '2024-09-01 08:00:00', '2024-11-30 21:00:00', 'Central Stadium', 950000.00, 'Moscow, Petrovka Street'),
-('NBA Summer League', '2024-06-01 11:00:00', '2024-08-31 23:59:00', 'Madison Square Garden', 1800000.00, 'New York, 4 Pennsylvania Plaza'),
-('Winter Classic', '2024-12-01 09:00:00', '2024-12-31 20:00:00', 'Allianz Arena', 800000.00, 'Munich, Werner-Heisenberg-Allee'),
-('Autumn Championship', '2024-09-01 10:00:00', '2024-09-30 22:00:00', 'Olympic Stadium', 500000.00, 'Moscow, Olympiysky Prospect'),
-('Winter League', '2024-12-01 09:00:00', '2024-12-20 21:00:00', 'Olympic Stadium', 300000.00, 'Moscow, Olympiysky Prospect'),
-('European Cup', '2024-07-01 11:00:00', '2024-07-31 23:00:00', 'National Arena', 900000.00, 'Paris, Avenue des Champs-Élysées'),
-('Regional Championship', '2024-08-01 08:00:00', '2024-08-31 20:00:00', 'Central Stadium', 400000.00, 'Moscow, Petrovka Street');
 
 -- Теперь вставляем матчи с указанием tournament_id через подзапросы
 -- Матчи для Spring Cup
@@ -893,12 +838,6 @@ INSERT INTO Match (club1_id, club2_id, match_date, match_time, result_1, result_
 ((SELECT club_id FROM Club WHERE name = 'Bayern'), (SELECT club_id FROM Club WHERE name = 'CSKA'), '2024-05-18', '19:00:00', 2, 1),
 ((SELECT club_id FROM Club WHERE name = 'Tokyo Giants'), (SELECT club_id FROM Club WHERE name = 'São Paulo FC'), '2024-05-25', '18:30:00', 0, 2);
 
--- Турниры за 2025 год
-INSERT INTO Tournament (name, start_date, end_date, venue_name, prize_fund, venue_address) VALUES
-('Spring International 2025', '2025-03-01 09:00:00', '2025-03-31 22:00:00', 'Luzhniki Stadium', 850000.00, 'Moscow, Luzhniki Street, 24'),
-('El Clasico Cup 2025', '2025-04-01 10:00:00', '2025-04-30 21:00:00', 'Santiago Bernabeu', 1200000.00, 'Madrid, Av. de Concha Espina, 1'),
-('Summer Championship 2025', '2025-07-01 08:00:00', '2025-07-31 20:00:00', 'Allianz Arena', 950000.00, 'Munich, Werner-Heisenberg-Allee, 25'),
-('Autumn Tournament 2025', '2025-09-15 09:00:00', '2025-10-15 22:00:00', 'VTB Arena', 700000.00, 'Moscow, Leningradsky Prospect, 36');
 
 -- Матчи 2025 года с привязкой к турнирам через подзапросы
 -- Spring International 2025
@@ -938,12 +877,6 @@ INSERT INTO Match (club1_id, club2_id, match_date, match_time, result_1, result_
 ((SELECT club_id FROM Club WHERE name = 'Barcelona'), (SELECT club_id FROM Club WHERE name = 'Spartak'), '2025-08-22', '18:00:00', 2, 1),
 ((SELECT club_id FROM Club WHERE name = 'Zenit'), (SELECT club_id FROM Club WHERE name = 'Bayern'), '2025-10-12', '20:00:00', 0, 2);
 
--- Турниры 2026 года
-INSERT INTO Tournament (name, start_date, end_date, venue_name, prize_fund, venue_address) VALUES
-('Winter Cup 2026', '2026-01-01 09:00:00', '2026-01-31 22:00:00', 'Otkrytie Arena', 900000.00, 'Moscow, Volgogradsky Prospect, 69'),
-('Champions League 2026', '2026-02-15 10:00:00', '2026-03-15 21:00:00', 'Allianz Arena', 1500000.00, 'Munich, Werner-Heisenberg-Allee, 25'),
-('Spring Classic 2026', '2026-04-01 08:00:00', '2026-04-30 20:00:00', 'Camp Nou', 1100000.00, 'Barcelona, C. d''Aristides Maillol, 12'),
-('Summer International 2026', '2026-06-01 09:00:00', '2026-06-30 22:00:00', 'Gazprom Arena', 800000.00, 'Saint Petersburg, Football Alley, 1');
 
 -- Матчи 2026 года с привязкой к турнирам через подзапросы
 -- Winter Cup 2026
@@ -983,11 +916,6 @@ INSERT INTO Match (club1_id, club2_id, match_date, match_time, result_1, result_
 ((SELECT club_id FROM Club WHERE name = 'Lakers'), (SELECT club_id FROM Club WHERE name = 'Spartak'), '2026-05-20', '21:00:00', 2, 1),
 ((SELECT club_id FROM Club WHERE name = 'CSKA'), (SELECT club_id FROM Club WHERE name = 'Barcelona'), '2026-07-01', '19:15:00', 1, 3);
 
--- Wembley турниры
-INSERT INTO Tournament (name, start_date, end_date, venue_name, prize_fund, venue_address) VALUES
-('Международный кубок 2026', '2026-11-20 09:00:00', '2026-12-10 22:00:00', 'Wembley', 1500000.00, 'Лондон, Wembley Park'),
-('Кубок Англии 2026', '2026-12-01 09:00:00', '2026-12-31 22:00:00', 'Wembley', 700000.00, 'Лондон, Wembley Park');
-
 -- Матчи для Международного кубка 2026
 INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
 ((SELECT tournament_id FROM Tournament WHERE name = 'Международный кубок 2026'), 
@@ -1022,11 +950,6 @@ INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, re
  (SELECT club_id FROM Club WHERE name = 'Liverpool'), 
  '2026-12-29', '19:45:00', 0, 2);
 
--- Luzhniki турниры
-INSERT INTO Tournament (name, start_date, end_date, venue_name, prize_fund, venue_address) VALUES
-('Зимний кубок 2026', '2026-01-01 09:00:00', '2026-01-31 22:00:00', 'Luzhniki', 500000.00, 'Москва, ул. Лужники, 24'),
-('Кубок Содружества 2026', '2026-02-01 09:00:00', '2026-02-28 22:00:00', 'Luzhniki', 600000.00, 'Москва, ул. Лужники, 24'),
-('Московский международный кубок 2026', '2026-03-01 09:00:00', '2026-03-31 22:00:00', 'Luzhniki', 750000.00, 'Москва, ул. Лужники, 24');
 
 -- Матчи для Зимнего кубка 2026
 INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
@@ -1139,7 +1062,12 @@ INSERT INTO Stadion (name, address) VALUES
 ('Gazprom Arena', 'Saint Petersburg, Football Alley, 1'),
 ('Wembley', 'London, Wembley Park');
 
-
+DELETE FROM Stadion
+WHERE stadion_id NOT IN (
+    SELECT MIN(stadion_id)
+    FROM Stadion
+    GROUP BY name
+);
 
 INSERT INTO Tournament (name, start_date, end_date, stadion_id, prize_fund) VALUES 
 -- 2024 год
