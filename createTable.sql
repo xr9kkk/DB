@@ -178,6 +178,7 @@ CHECK (salary >= 0);
 DROP TABLE IF EXISTS Match CASCADE;
 CREATE TABLE Match (
     match_id SERIAL PRIMARY KEY,
+    tournament_id INTEGER REFERENCES Tournament(tournament_id),  -- Внешний ключ к турниру
     club1_id INTEGER REFERENCES Club(club_id),
     club2_id INTEGER REFERENCES Club(club_id),
     match_date DATE NOT NULL,
@@ -189,17 +190,23 @@ CREATE TABLE Match (
 ALTER TABLE Match ADD CONSTRAINT chk_clubs_different 
 CHECK (club1_id <> club2_id);
 
+--Stadion
+DROP TABLE IF EXISTS Stadion CASCADE;
+CREATE TABLE Stadion(
+	stadion_id SERIAL PRIMARY KEY,
+	name TEXT NOT NULL,
+	address TEXT NOT NULL
+);
+
 -- Tournament
 DROP TABLE IF EXISTS Tournament CASCADE;
 CREATE TABLE Tournament (
     tournament_id SERIAL PRIMARY KEY,
-    match_id INTEGER REFERENCES Match(match_id),
     name TEXT,
     start_date TIMESTAMP NOT NULL,
     end_date TIMESTAMP NOT NULL,
-    venue_name TEXT NOT NULL,
-    prize_fund NUMERIC,
-    venue_address TEXT NOT NULL
+	stadion_id INTEGER NOT NULL REFERENCES Stadion(stadion_id),
+    prize_fund NUMERIC
 );
 
 ALTER TABLE Tournament ADD CONSTRAINT chk_tournament_dates 

@@ -528,6 +528,7 @@ INSERT INTO Award (athlete_id, award_date, award_type_id) VALUES
 ((SELECT athlete_id FROM Athlete WHERE last_name = 'Voronov' AND first_name = 'Sergey'), '2022-05-25', (SELECT award_type_id FROM Award_type WHERE award_name = 'Most Valuable Player')),
 ((SELECT athlete_id FROM Athlete WHERE last_name = 'Voronov' AND first_name = 'Sergey'), '2023-05-30', (SELECT award_type_id FROM Award_type WHERE award_name = 'Most Valuable Player')),
 ((SELECT athlete_id FROM Athlete WHERE last_name = 'Voronov' AND first_name = 'Sergey'), '2023-12-15', (SELECT award_type_id FROM Award_type WHERE award_name = 'Most Valuable Player'));
+
 -- Match
 INSERT INTO Match (club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
 ((SELECT club_id FROM Club WHERE name = 'Spartak'), (SELECT club_id FROM Club WHERE name = 'CSKA'), '2024-03-15', '19:00:00', 1, 1),
@@ -711,113 +712,801 @@ SET previous_rank_id = (SELECT rank_title_id FROM Rank_title WHERE rank_title = 
 WHERE rank_title = 'Grandmaster';
 
 
--- Матчи за 2025 год (прошлый год)
-INSERT INTO Match (club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
-((SELECT club_id FROM Club WHERE name = 'Spartak'), 
- (SELECT club_id FROM Club WHERE name = 'CSKA'), 
- '2025-03-15', '19:00:00', 2, 1),
 
-((SELECT club_id FROM Club WHERE name = 'Lakers'), 
- (SELECT club_id FROM Club WHERE name = 'Bayern'), 
- '2025-03-16', '21:00:00', 3, 2),
 
-((SELECT club_id FROM Club WHERE name = 'Spartak'), 
- (SELECT club_id FROM Club WHERE name = 'Bayern'), 
- '2025-03-18', '18:30:00', 1, 3),
+INSERT INTO Region (name, country_id) VALUES 
+('England', (SELECT country_id FROM Country WHERE name = 'United Kingdom')),
+('Greater Manchester', (SELECT country_id FROM Country WHERE name = 'United Kingdom')),
+('Merseyside', (SELECT country_id FROM Country WHERE name = 'United Kingdom')),
+('Madrid', (SELECT country_id FROM Country WHERE name = 'Spain')),
+('Catalonia', (SELECT country_id FROM Country WHERE name = 'Spain')),
+('Andalusia', (SELECT country_id FROM Country WHERE name = 'Spain')),
+('Bavaria', (SELECT country_id FROM Country WHERE name = 'Germany')),
+('Berlin', (SELECT country_id FROM Country WHERE name = 'Germany')),
+('North Rhine', (SELECT country_id FROM Country WHERE name = 'Germany')),
+('Saxony', (SELECT country_id FROM Country WHERE name = 'Germany')),
+('Piedmont', (SELECT country_id FROM Country WHERE name = 'Italy')),
+('Lazio', (SELECT country_id FROM Country WHERE name = 'Italy')),
+('Ile-de-France', (SELECT country_id FROM Country WHERE name = 'France')),
+('Moscow Oblast', (SELECT country_id FROM Country WHERE name = 'Russia'))
+ON CONFLICT(name, country_id) DO NOTHING;
 
-((SELECT club_id FROM Club WHERE name = 'Real Madrid'), 
- (SELECT club_id FROM Club WHERE name = 'Barcelona'), 
- '2025-04-10', '20:45:00', 2, 2),
 
-((SELECT club_id FROM Club WHERE name = 'Zenit'), 
+INSERT INTO City (name, region_id) VALUES 
+-- Англия
+('London', (SELECT region_id FROM Region WHERE name = 'England')),
+('Manchester', (SELECT region_id FROM Region WHERE name = 'Greater Manchester')),
+('Liverpool', (SELECT region_id FROM Region WHERE name = 'Merseyside')),
+
+-- Испания
+('Madrid', (SELECT region_id FROM Region WHERE name = 'Madrid')),
+('Barcelona', (SELECT region_id FROM Region WHERE name = 'Catalonia')),
+('Seville', (SELECT region_id FROM Region WHERE name = 'Andalusia')),
+
+-- Германия
+('Munich', (SELECT region_id FROM Region WHERE name = 'Bavaria')),
+('Berlin', (SELECT region_id FROM Region WHERE name = 'Berlin')),
+('Gelsenkirchen', (SELECT region_id FROM Region WHERE name = 'North Rhine')),
+('Wolfsburg', (SELECT region_id FROM Region WHERE name = 'North Rhine')),
+('Leipzig', (SELECT region_id FROM Region WHERE name = 'Saxony')),
+('Leverkusen', (SELECT region_id FROM Region WHERE name = 'North Rhine')),
+('Dortmund', (SELECT region_id FROM Region WHERE name = 'North Rhine')),
+
+-- Италия
+('Turin', (SELECT region_id FROM Region WHERE name = 'Piedmont')),
+('Rome', (SELECT region_id FROM Region WHERE name = 'Lazio')),
+
+-- Франция
+('Paris', (SELECT region_id FROM Region WHERE name = 'Ile-de-France')),
+
+-- Россия
+('Moscow', (SELECT region_id FROM Region WHERE name = 'Moscow Oblast'))
+ON CONFLICT(name, region_id) DO NOTHING;
+
+
+-- Английские клубы
+INSERT INTO Club (name, city_id, foundation_date) VALUES 
+('Manchester United', (SELECT city_id FROM City WHERE name = 'Manchester'), '1878-01-01'),
+('Liverpool', (SELECT city_id FROM City WHERE name = 'Liverpool'), '1892-06-03'),
+('Arsenal', (SELECT city_id FROM City WHERE name = 'London'), '1886-10-01'),
+('Chelsea', (SELECT city_id FROM City WHERE name = 'London'), '1905-03-10'),
+('Tottenham', (SELECT city_id FROM City WHERE name = 'London'), '1882-09-05'),
+('Manchester City', (SELECT city_id FROM City WHERE name = 'Manchester'), '1880-11-23'),
+('Leicester', (SELECT city_id FROM City WHERE name = 'London'), '1884-01-01'),
+('Everton', (SELECT city_id FROM City WHERE name = 'Liverpool'), '1878-01-01'),
+('Newcastle', (SELECT city_id FROM City WHERE name = 'London'), '1892-12-09')
+ON CONFLICT(name, city_id) DO NOTHING;
+
+-- Сборные (используем столицы)
+INSERT INTO Club (name, city_id, foundation_date) VALUES 
+('England', (SELECT city_id FROM City WHERE name = 'London'), '1863-01-01'),
+('Germany', (SELECT city_id FROM City WHERE name = 'Berlin'), '1900-01-01'),
+('France', (SELECT city_id FROM City WHERE name = 'Paris'), '1904-01-01'),
+('Italy', (SELECT city_id FROM City WHERE name = 'Rome'), '1898-01-01')
+ON CONFLICT(name, city_id) DO NOTHING;
+
+-- Испанские клубы
+INSERT INTO Club (name, city_id, foundation_date) VALUES 
+('Real Madrid', (SELECT city_id FROM City WHERE name = 'Madrid'), '1902-03-06'),
+('Barcelona', (SELECT city_id FROM City WHERE name = 'Barcelona'), '1899-11-29'),
+('Atletico Madrid', (SELECT city_id FROM City WHERE name = 'Madrid'), '1903-04-26'),
+('Sevilla', (SELECT city_id FROM City WHERE name = 'Seville'), '1890-01-25'),
+('Espanyol', (SELECT city_id FROM City WHERE name = 'Barcelona'), '1900-10-28'),
+('Girona', (SELECT city_id FROM City WHERE name = 'Barcelona'), '1930-07-23'),
+('Real Betis', (SELECT city_id FROM City WHERE name = 'Seville'), '1907-09-12'),
+('Real Sociedad', (SELECT city_id FROM City WHERE name = 'Madrid'), '1909-09-07'),
+('Valencia', (SELECT city_id FROM City WHERE name = 'Madrid'), '1919-03-18'),
+('Athletic Bilbao', (SELECT city_id FROM City WHERE name = 'Madrid'), '1898-07-18')
+ON CONFLICT(name, city_id) DO NOTHING;
+
+-- Немецкие клубы
+INSERT INTO Club (name, city_id, foundation_date) VALUES 
+('Bayern', (SELECT city_id FROM City WHERE name = 'Munich'), '1900-02-27'),
+('Dortmund', (SELECT city_id FROM City WHERE name = 'Dortmund'), '1909-12-19'),
+('Schalke', (SELECT city_id FROM City WHERE name = 'Gelsenkirchen'), '1904-05-04'),
+('Wolfsburg', (SELECT city_id FROM City WHERE name = 'Wolfsburg'), '1945-09-12'),
+('Leipzig', (SELECT city_id FROM City WHERE name = 'Leipzig'), '2009-05-19'),
+('Leverkusen', (SELECT city_id FROM City WHERE name = 'Leverkusen'), '1904-07-01')
+ON CONFLICT(name, city_id) DO NOTHING;
+
+-- Итальянские и французские клубы
+INSERT INTO Club (name, city_id, foundation_date) VALUES 
+('Juventus', (SELECT city_id FROM City WHERE name = 'Turin'), '1897-11-01'),
+('PSG', (SELECT city_id FROM City WHERE name = 'Paris'), '1970-08-12')
+ON CONFLICT(name, city_id) DO NOTHING;
+
+-- Российские клубы
+INSERT INTO Club (name, city_id, foundation_date) VALUES 
+('Spartak', (SELECT city_id FROM City WHERE name = 'Moscow'), '1922-04-18'),
+('CSKA', (SELECT city_id FROM City WHERE name = 'Moscow'), '1911-08-27'),
+('Dynamo', (SELECT city_id FROM City WHERE name = 'Moscow'), '1923-04-18'),
+('Zenit', (SELECT city_id FROM City WHERE name = 'Moscow'), '1925-05-25')
+ON CONFLICT(name, city_id) DO NOTHING;
+
+
+
+-- Сначала создаем турниры (они получат свои ID автоматически)
+INSERT INTO Tournament (name, start_date, end_date, venue_name, prize_fund, venue_address) VALUES 
+('Spring Cup', '2024-05-01 09:00:00', '2024-05-31 22:00:00', 'Olympic Stadium', 750000.00, 'Moscow, Olympiysky Prospect'),
+('Summer Championship', '2024-06-01 10:00:00', '2024-08-31 23:00:00', 'National Arena', 1250000.00, 'Paris, Avenue des Champs-Élysées'),
+('Autumn League', '2024-09-01 08:00:00', '2024-11-30 21:00:00', 'Central Stadium', 950000.00, 'Moscow, Petrovka Street'),
+('NBA Summer League', '2024-06-01 11:00:00', '2024-08-31 23:59:00', 'Madison Square Garden', 1800000.00, 'New York, 4 Pennsylvania Plaza'),
+('Winter Classic', '2024-12-01 09:00:00', '2024-12-31 20:00:00', 'Allianz Arena', 800000.00, 'Munich, Werner-Heisenberg-Allee'),
+('Autumn Championship', '2024-09-01 10:00:00', '2024-09-30 22:00:00', 'Olympic Stadium', 500000.00, 'Moscow, Olympiysky Prospect'),
+('Winter League', '2024-12-01 09:00:00', '2024-12-20 21:00:00', 'Olympic Stadium', 300000.00, 'Moscow, Olympiysky Prospect'),
+('European Cup', '2024-07-01 11:00:00', '2024-07-31 23:00:00', 'National Arena', 900000.00, 'Paris, Avenue des Champs-Élysées'),
+('Regional Championship', '2024-08-01 08:00:00', '2024-08-31 20:00:00', 'Central Stadium', 400000.00, 'Moscow, Petrovka Street');
+
+-- Теперь вставляем матчи с указанием tournament_id через подзапросы
+-- Матчи для Spring Cup
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'Spring Cup'), 
+ (SELECT club_id FROM Club WHERE name = 'Spartak'), 
  (SELECT club_id FROM Club WHERE name = 'Dynamo'), 
- '2025-05-05', '17:00:00', 1, 0),
+ '2024-05-10', '18:30:00', 2, 1);
 
-((SELECT club_id FROM Club WHERE name = 'CSKA'), 
+-- Матчи для Summer Championship
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'Summer Championship'), 
+ (SELECT club_id FROM Club WHERE name = 'PSG'), 
+ (SELECT club_id FROM Club WHERE name = 'London Royals'), 
+ '2024-05-15', '20:00:00', 3, 0);
+
+-- Матчи для Autumn League
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'Autumn League'), 
+ (SELECT club_id FROM Club WHERE name = 'CSKA'), 
+ (SELECT club_id FROM Club WHERE name = 'Ural'), 
+ '2024-06-01', '17:30:00', 2, 2);
+
+-- Матчи для NBA Summer League
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'NBA Summer League'), 
  (SELECT club_id FROM Club WHERE name = 'Lakers'), 
- '2025-06-20', '19:30:00', 0, 4),
+ (SELECT club_id FROM Club WHERE name = 'Houston Rockets'), 
+ '2024-06-10', '22:15:00', 3, 2);
 
-((SELECT club_id FROM Club WHERE name = 'Bayern'), 
- (SELECT club_id FROM Club WHERE name = 'Real Madrid'), 
- '2025-07-15', '21:15:00', 3, 1),
-
-((SELECT club_id FROM Club WHERE name = 'Barcelona'), 
- (SELECT club_id FROM Club WHERE name = 'Spartak'), 
- '2025-08-22', '18:00:00', 2, 1),
-
-((SELECT club_id FROM Club WHERE name = 'Dynamo'), 
- (SELECT club_id FROM Club WHERE name = 'CSKA'), 
- '2025-09-30', '16:45:00', 1, 1),
-
-((SELECT club_id FROM Club WHERE name = 'Zenit'), 
+-- Матчи для Winter Classic
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'Winter Classic'), 
  (SELECT club_id FROM Club WHERE name = 'Bayern'), 
- '2025-10-12', '20:00:00', 0, 2);
+ (SELECT club_id FROM Club WHERE name = 'Tokyo Giants'), 
+ '2024-11-08', '19:30:00', 2, 1);
 
- -- Матчи за 2026 год (текущий год)
+-- Остальные матчи без турнира (tournament_id = NULL)
 INSERT INTO Match (club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
-((SELECT club_id FROM Club WHERE name = 'Spartak'), 
- (SELECT club_id FROM Club WHERE name = 'Dynamo'), 
- '2026-01-10', '18:00:00', 2, 0),
+((SELECT club_id FROM Club WHERE name = 'Spartak'), (SELECT club_id FROM Club WHERE name = 'CSKA'), '2024-03-15', '19:00:00', 1, 1),
+((SELECT club_id FROM Club WHERE name = 'Lakers'), (SELECT club_id FROM Club WHERE name = 'Bayern'), '2024-03-16', '21:00:00', 2, 0),
+((SELECT club_id FROM Club WHERE name = 'Spartak'), (SELECT club_id FROM Club WHERE name = 'Bayern'), '2024-03-18', '18:30:00', 0, 3),
+((SELECT club_id FROM Club WHERE name = 'CSKA'), (SELECT club_id FROM Club WHERE name = 'Lakers'), '2024-03-20', '20:00:00', 2, 2),
+((SELECT club_id FROM Club WHERE name = 'Bayern'), (SELECT club_id FROM Club WHERE name = 'Spartak'), '2024-03-22', '19:45:00', 1, 2),
+((SELECT club_id FROM Club WHERE name = 'CSKA'), (SELECT club_id FROM Club WHERE name = 'Bayern'), '2024-03-25', '17:30:00', 3, 1),
+((SELECT club_id FROM Club WHERE name = 'Lakers'), (SELECT club_id FROM Club WHERE name = 'Spartak'), '2024-03-28', '20:15:00', 0, 1),
+((SELECT club_id FROM Club WHERE name = 'PSG'), (SELECT club_id FROM Club WHERE name = 'Bayern'), '2024-04-01', '20:30:00', 2, 2),
+((SELECT club_id FROM Club WHERE name = 'Tokyo Giants'), (SELECT club_id FROM Club WHERE name = 'São Paulo FC'), '2024-04-03', '19:00:00', 1, 0),
+((SELECT club_id FROM Club WHERE name = 'Dynamo'), (SELECT club_id FROM Club WHERE name = 'London Royals'), '2024-04-05', '18:45:00', 3, 1),
+((SELECT club_id FROM Club WHERE name = 'Ural'), (SELECT club_id FROM Club WHERE name = 'Krasnodar FC'), '2024-04-07', '17:30:00', 2, 2),
+((SELECT club_id FROM Club WHERE name = 'Houston Rockets'), (SELECT club_id FROM Club WHERE name = 'Lakers'), '2024-04-09', '21:15:00', 1, 3),
+((SELECT club_id FROM Club WHERE name = 'CSKA'), (SELECT club_id FROM Club WHERE name = 'Dynamo'), '2024-04-11', '19:30:00', 0, 1),
+((SELECT club_id FROM Club WHERE name = 'Bayern'), (SELECT club_id FROM Club WHERE name = 'PSG'), '2024-04-13', '20:00:00', 2, 1),
+((SELECT club_id FROM Club WHERE name = 'São Paulo FC'), (SELECT club_id FROM Club WHERE name = 'Tokyo Giants'), '2024-04-15', '18:00:00', 1, 1),
+((SELECT club_id FROM Club WHERE name = 'Bayern'), (SELECT club_id FROM Club WHERE name = 'CSKA'), '2024-05-18', '19:00:00', 2, 1),
+((SELECT club_id FROM Club WHERE name = 'Tokyo Giants'), (SELECT club_id FROM Club WHERE name = 'São Paulo FC'), '2024-05-25', '18:30:00', 0, 2);
 
-((SELECT club_id FROM Club WHERE name = 'CSKA'), 
- (SELECT club_id FROM Club WHERE name = 'Zenit'), 
- '2026-02-15', '19:30:00', 1, 1),
+-- Турниры за 2025 год
+INSERT INTO Tournament (name, start_date, end_date, venue_name, prize_fund, venue_address) VALUES
+('Spring International 2025', '2025-03-01 09:00:00', '2025-03-31 22:00:00', 'Luzhniki Stadium', 850000.00, 'Moscow, Luzhniki Street, 24'),
+('El Clasico Cup 2025', '2025-04-01 10:00:00', '2025-04-30 21:00:00', 'Santiago Bernabeu', 1200000.00, 'Madrid, Av. de Concha Espina, 1'),
+('Summer Championship 2025', '2025-07-01 08:00:00', '2025-07-31 20:00:00', 'Allianz Arena', 950000.00, 'Munich, Werner-Heisenberg-Allee, 25'),
+('Autumn Tournament 2025', '2025-09-15 09:00:00', '2025-10-15 22:00:00', 'VTB Arena', 700000.00, 'Moscow, Leningradsky Prospect, 36');
 
-((SELECT club_id FROM Club WHERE name = 'Real Madrid'), 
- (SELECT club_id FROM Club WHERE name = 'Bayern'), 
- '2026-02-28', '21:00:00', 3, 2),
-
-((SELECT club_id FROM Club WHERE name = 'Lakers'), 
- (SELECT club_id FROM Club WHERE name = 'Barcelona'), 
- '2026-03-08', '17:45:00', 2, 3),
-
-((SELECT club_id FROM Club WHERE name = 'Bayern'), 
- (SELECT club_id FROM Club WHERE name = 'CSKA'), 
- '2026-03-25', '20:15:00', 4, 0),
-
-((SELECT club_id FROM Club WHERE name = 'Dynamo'), 
- (SELECT club_id FROM Club WHERE name = 'Real Madrid'), 
- '2026-04-05', '19:00:00', 1, 2),
-
-((SELECT club_id FROM Club WHERE name = 'Barcelona'), 
- (SELECT club_id FROM Club WHERE name = 'Zenit'), 
- '2026-04-18', '18:30:00', 3, 1),
-
-((SELECT club_id FROM Club WHERE name = 'Lakers'), 
+-- Матчи 2025 года с привязкой к турнирам через подзапросы
+-- Spring International 2025
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'Spring International 2025'), 
  (SELECT club_id FROM Club WHERE name = 'Spartak'), 
- '2026-05-20', '21:00:00', 2, 1),
+ (SELECT club_id FROM Club WHERE name = 'CSKA'), 
+ '2025-03-15', '19:00:00', 2, 1);
 
-((SELECT club_id FROM Club WHERE name = 'Zenit'), 
+-- El Clasico Cup 2025
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'El Clasico Cup 2025'), 
  (SELECT club_id FROM Club WHERE name = 'Real Madrid'), 
- '2026-06-10', '20:45:00', 0, 0),
-
-((SELECT club_id FROM Club WHERE name = 'CSKA'), 
  (SELECT club_id FROM Club WHERE name = 'Barcelona'), 
- '2026-07-01', '19:15:00', 1, 3);
+ '2025-04-10', '20:45:00', 2, 2);
 
- -- Турниры за 2025 год (прошлый год) - ссылаемся на матчи 2025
-INSERT INTO Tournament (match_id, name, start_date, end_date, venue_name, prize_fund, venue_address) VALUES
-((SELECT match_id FROM Match WHERE match_date = '2025-03-15' AND club1_id = (SELECT club_id FROM Club WHERE name = 'Spartak')),
- 'Spring International 2025', '2025-03-01 09:00:00', '2025-03-31 22:00:00', 'Luzhniki Stadium', 850000.00, 'Moscow, Luzhniki Street, 24'),
+-- Summer Championship 2025
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'Summer Championship 2025'), 
+ (SELECT club_id FROM Club WHERE name = 'Bayern'), 
+ (SELECT club_id FROM Club WHERE name = 'Real Madrid'), 
+ '2025-07-15', '21:15:00', 3, 1);
 
-((SELECT match_id FROM Match WHERE match_date = '2025-04-10' AND club1_id = (SELECT club_id FROM Club WHERE name = 'Real Madrid')),
- 'El Clasico Cup 2025', '2025-04-01 10:00:00', '2025-04-30 21:00:00', 'Santiago Bernabeu', 1200000.00, 'Madrid, Av. de Concha Espina, 1'),
+-- Autumn Tournament 2025
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'Autumn Tournament 2025'), 
+ (SELECT club_id FROM Club WHERE name = 'Dynamo'), 
+ (SELECT club_id FROM Club WHERE name = 'CSKA'), 
+ '2025-09-30', '16:45:00', 1, 1);
 
-((SELECT match_id FROM Match WHERE match_date = '2025-07-15' AND club1_id = (SELECT club_id FROM Club WHERE name = 'Bayern')),
- 'Summer Championship 2025', '2025-07-01 08:00:00', '2025-07-31 20:00:00', 'Allianz Arena', 950000.00, 'Munich, Werner-Heisenberg-Allee, 25'),
+-- Остальные матчи 2025 без турнира
+INSERT INTO Match (club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT club_id FROM Club WHERE name = 'Lakers'), (SELECT club_id FROM Club WHERE name = 'Bayern'), '2025-03-16', '21:00:00', 3, 2),
+((SELECT club_id FROM Club WHERE name = 'Spartak'), (SELECT club_id FROM Club WHERE name = 'Bayern'), '2025-03-18', '18:30:00', 1, 3),
+((SELECT club_id FROM Club WHERE name = 'Zenit'), (SELECT club_id FROM Club WHERE name = 'Dynamo'), '2025-05-05', '17:00:00', 1, 0),
+((SELECT club_id FROM Club WHERE name = 'CSKA'), (SELECT club_id FROM Club WHERE name = 'Lakers'), '2025-06-20', '19:30:00', 0, 4),
+((SELECT club_id FROM Club WHERE name = 'Barcelona'), (SELECT club_id FROM Club WHERE name = 'Spartak'), '2025-08-22', '18:00:00', 2, 1),
+((SELECT club_id FROM Club WHERE name = 'Zenit'), (SELECT club_id FROM Club WHERE name = 'Bayern'), '2025-10-12', '20:00:00', 0, 2);
 
-((SELECT match_id FROM Match WHERE match_date = '2025-09-30' AND club1_id = (SELECT club_id FROM Club WHERE name = 'Dynamo')),
- 'Autumn Tournament 2025', '2025-09-15 09:00:00', '2025-10-15 22:00:00', 'VTB Arena', 700000.00, 'Moscow, Leningradsky Prospect, 36'),
+-- Турниры 2026 года
+INSERT INTO Tournament (name, start_date, end_date, venue_name, prize_fund, venue_address) VALUES
+('Winter Cup 2026', '2026-01-01 09:00:00', '2026-01-31 22:00:00', 'Otkrytie Arena', 900000.00, 'Moscow, Volgogradsky Prospect, 69'),
+('Champions League 2026', '2026-02-15 10:00:00', '2026-03-15 21:00:00', 'Allianz Arena', 1500000.00, 'Munich, Werner-Heisenberg-Allee, 25'),
+('Spring Classic 2026', '2026-04-01 08:00:00', '2026-04-30 20:00:00', 'Camp Nou', 1100000.00, 'Barcelona, C. d''Aristides Maillol, 12'),
+('Summer International 2026', '2026-06-01 09:00:00', '2026-06-30 22:00:00', 'Gazprom Arena', 800000.00, 'Saint Petersburg, Football Alley, 1');
 
--- Турниры за 2026 год (текущий год) - ссылаемся на матчи 2026
-((SELECT match_id FROM Match WHERE match_date = '2026-01-10' AND club1_id = (SELECT club_id FROM Club WHERE name = 'Spartak')),
- 'Winter Cup 2026', '2026-01-01 09:00:00', '2026-01-31 22:00:00', 'Otkrytie Arena', 900000.00, 'Moscow, Volgogradsky Prospect, 69'),
+-- Матчи 2026 года с привязкой к турнирам через подзапросы
+-- Winter Cup 2026
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'Winter Cup 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Spartak'), 
+ (SELECT club_id FROM Club WHERE name = 'Dynamo'), 
+ '2026-01-10', '18:00:00', 2, 0);
 
-((SELECT match_id FROM Match WHERE match_date = '2026-02-28' AND club1_id = (SELECT club_id FROM Club WHERE name = 'Real Madrid')),
- 'Champions League 2026', '2026-02-15 10:00:00', '2026-03-15 21:00:00', 'Allianz Arena', 1500000.00, 'Munich, Werner-Heisenberg-Allee, 25'),
+-- Champions League 2026
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'Champions League 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Real Madrid'), 
+ (SELECT club_id FROM Club WHERE name = 'Bayern'), 
+ '2026-02-28', '21:00:00', 3, 2);
 
-((SELECT match_id FROM Match WHERE match_date = '2026-04-18' AND club1_id = (SELECT club_id FROM Club WHERE name = 'Barcelona')),
- 'Spring Classic 2026', '2026-04-01 08:00:00', '2026-04-30 20:00:00', 'Camp Nou', 1100000.00, 'Barcelona, C. d''Aristides Maillol, 12'),
+-- Spring Classic 2026
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'Spring Classic 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Barcelona'), 
+ (SELECT club_id FROM Club WHERE name = 'Zenit'), 
+ '2026-04-18', '18:30:00', 3, 1);
 
-((SELECT match_id FROM Match WHERE match_date = '2026-06-10' AND club1_id = (SELECT club_id FROM Club WHERE name = 'Zenit')),
- 'Summer International 2026', '2026-06-01 09:00:00', '2026-06-30 22:00:00', 'Gazprom Arena', 800000.00, 'Saint Petersburg, Football Alley, 1');
+-- Summer International 2026
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'Summer International 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Zenit'), 
+ (SELECT club_id FROM Club WHERE name = 'Real Madrid'), 
+ '2026-06-10', '20:45:00', 0, 0);
+
+-- Остальные матчи 2026 без турнира
+INSERT INTO Match (club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT club_id FROM Club WHERE name = 'CSKA'), (SELECT club_id FROM Club WHERE name = 'Zenit'), '2026-02-15', '19:30:00', 1, 1),
+((SELECT club_id FROM Club WHERE name = 'Lakers'), (SELECT club_id FROM Club WHERE name = 'Barcelona'), '2026-03-08', '17:45:00', 2, 3),
+((SELECT club_id FROM Club WHERE name = 'Bayern'), (SELECT club_id FROM Club WHERE name = 'CSKA'), '2026-03-25', '20:15:00', 4, 0),
+((SELECT club_id FROM Club WHERE name = 'Dynamo'), (SELECT club_id FROM Club WHERE name = 'Real Madrid'), '2026-04-05', '19:00:00', 1, 2),
+((SELECT club_id FROM Club WHERE name = 'Lakers'), (SELECT club_id FROM Club WHERE name = 'Spartak'), '2026-05-20', '21:00:00', 2, 1),
+((SELECT club_id FROM Club WHERE name = 'CSKA'), (SELECT club_id FROM Club WHERE name = 'Barcelona'), '2026-07-01', '19:15:00', 1, 3);
+
+-- Wembley турниры
+INSERT INTO Tournament (name, start_date, end_date, venue_name, prize_fund, venue_address) VALUES
+('Международный кубок 2026', '2026-11-20 09:00:00', '2026-12-10 22:00:00', 'Wembley', 1500000.00, 'Лондон, Wembley Park'),
+('Кубок Англии 2026', '2026-12-01 09:00:00', '2026-12-31 22:00:00', 'Wembley', 700000.00, 'Лондон, Wembley Park');
+
+-- Матчи для Международного кубка 2026
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'Международный кубок 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'England'), 
+ (SELECT club_id FROM Club WHERE name = 'Germany'), 
+ '2026-11-25', '20:00:00', 2, 0),
+ 
+((SELECT tournament_id FROM Tournament WHERE name = 'Международный кубок 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'England'), 
+ (SELECT club_id FROM Club WHERE name = 'France'), 
+ '2026-11-28', '20:00:00', 1, 1),
+ 
+((SELECT tournament_id FROM Tournament WHERE name = 'Международный кубок 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'England'), 
+ (SELECT club_id FROM Club WHERE name = 'Italy'), 
+ '2026-12-02', '20:00:00', 3, 2);
+
+-- Матчи для Кубка Англии 2026
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'Кубок Англии 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Tottenham'), 
+ (SELECT club_id FROM Club WHERE name = 'Arsenal'), 
+ '2026-12-15', '19:45:00', 1, 1),
+ 
+((SELECT tournament_id FROM Tournament WHERE name = 'Кубок Англии 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Tottenham'), 
+ (SELECT club_id FROM Club WHERE name = 'Chelsea'), 
+ '2026-12-22', '19:45:00', 2, 3),
+ 
+((SELECT tournament_id FROM Tournament WHERE name = 'Кубок Англии 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Tottenham'), 
+ (SELECT club_id FROM Club WHERE name = 'Liverpool'), 
+ '2026-12-29', '19:45:00', 0, 2);
+
+-- Luzhniki турниры
+INSERT INTO Tournament (name, start_date, end_date, venue_name, prize_fund, venue_address) VALUES
+('Зимний кубок 2026', '2026-01-01 09:00:00', '2026-01-31 22:00:00', 'Luzhniki', 500000.00, 'Москва, ул. Лужники, 24'),
+('Кубок Содружества 2026', '2026-02-01 09:00:00', '2026-02-28 22:00:00', 'Luzhniki', 600000.00, 'Москва, ул. Лужники, 24'),
+('Московский международный кубок 2026', '2026-03-01 09:00:00', '2026-03-31 22:00:00', 'Luzhniki', 750000.00, 'Москва, ул. Лужники, 24');
+
+-- Матчи для Зимнего кубка 2026
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'Зимний кубок 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Spartak'), 
+ (SELECT club_id FROM Club WHERE name = 'CSKA'), 
+ '2026-01-10', '18:00:00', 2, 1),
+ 
+((SELECT tournament_id FROM Tournament WHERE name = 'Зимний кубок 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Spartak'), 
+ (SELECT club_id FROM Club WHERE name = 'Dynamo'), 
+ '2026-01-17', '18:00:00', 1, 1),
+ 
+((SELECT tournament_id FROM Tournament WHERE name = 'Зимний кубок 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Spartak'), 
+ (SELECT club_id FROM Club WHERE name = 'Zenit'), 
+ '2026-01-24', '18:00:00', 3, 0);
+
+-- Матчи для Кубка Содружества 2026
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'Кубок Содружества 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'CSKA'), 
+ (SELECT club_id FROM Club WHERE name = 'Dynamo'), 
+ '2026-02-10', '19:00:00', 2, 0),
+ 
+((SELECT tournament_id FROM Tournament WHERE name = 'Кубок Содружества 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'CSKA'), 
+ (SELECT club_id FROM Club WHERE name = 'Zenit'), 
+ '2026-02-17', '19:00:00', 1, 2),
+ 
+((SELECT tournament_id FROM Tournament WHERE name = 'Кубок Содружества 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'CSKA'), 
+ (SELECT club_id FROM Club WHERE name = 'Spartak'), 
+ '2026-02-24', '19:00:00', 0, 1);
+
+-- Матчи для Московского международного кубка 2026
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'Московский международный кубок 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Dynamo'), 
+ (SELECT club_id FROM Club WHERE name = 'CSKA'), 
+ '2026-03-05', '20:00:00', 1, 1),
+ 
+((SELECT tournament_id FROM Tournament WHERE name = 'Московский международный кубок 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Dynamo'), 
+ (SELECT club_id FROM Club WHERE name = 'Spartak'), 
+ '2026-03-12', '20:00:00', 2, 3),
+ 
+((SELECT tournament_id FROM Tournament WHERE name = 'Московский международный кубок 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Dynamo'), 
+ (SELECT club_id FROM Club WHERE name = 'Zenit'), 
+ '2026-03-19', '20:00:00', 0, 0);
+
+
+-- Добавляем 18 спортсменов в CSKA
+WITH new_athletes AS (
+    VALUES 
+    ('CSKA_Athlete_1', 'Ivanov_1', 'Ivan', 'Ivanovich', 'male', '2000-01-01'::DATE, 185.5, 78.2, '+79990000001'),
+    ('CSKA_Athlete_2', 'Petrov_2', 'Petr', 'Petrovich', 'male', '2000-02-01'::DATE, 182.3, 76.1, '+79990000002'),
+    ('CSKA_Athlete_3', 'Sidorov_3', 'Sidor', 'Sidorovich', 'male', '2000-03-01'::DATE, 188.2, 82.3, '+79990000003'),
+    ('CSKA_Athlete_4', 'Smirnov_4', 'Alexey', 'Dmitrievich', 'male', '2000-04-01'::DATE, 184.1, 79.5, '+79990000004'),
+    ('CSKA_Athlete_5', 'Kuznetsov_5', 'Nikolay', 'Sergeevich', 'male', '2000-05-01'::DATE, 186.7, 81.2, '+79990000005'),
+    ('CSKA_Athlete_6', 'Popov_6', 'Andrey', 'Viktorovich', 'male', '2000-06-01'::DATE, 183.4, 77.8, '+79990000006'),
+    ('CSKA_Athlete_7', 'Volkov_7', 'Dmitry', 'Alexandrovich', 'male', '2000-07-01'::DATE, 187.3, 83.1, '+79990000007'),
+    ('CSKA_Athlete_8', 'Fedorov_8', 'Sergey', 'Ivanovich', 'male', '2000-08-01'::DATE, 181.9, 75.9, '+79990000008'),
+    ('CSKA_Athlete_9', 'Morozov_9', 'Pavel', 'Petrovich', 'male', '2000-09-01'::DATE, 185.2, 79.8, '+79990000009'),
+    ('CSKA_Athlete_10', 'Vasiliev_10', 'Roman', 'Andreevich', 'male', '2000-10-01'::DATE, 184.8, 80.1, '+79990000010'),
+    ('CSKA_Athlete_11', 'Novikov_11', 'Artem', 'Sergeevich', 'male', '2000-11-01'::DATE, 189.1, 84.5, '+79990000011'),
+    ('CSKA_Athlete_12', 'Zaitsev_12', 'Maxim', 'Ilyich', 'male', '2000-12-01'::DATE, 183.7, 77.2, '+79990000012'),
+    ('CSKA_Athlete_13', 'Sorokin_13', 'Ilya', 'Vladimirovich', 'male', '2001-01-01'::DATE, 186.3, 81.7, '+79990000013'),
+    ('CSKA_Athlete_14', 'Belyaev_14', 'Egor', 'Mikhailovich', 'male', '2001-02-01'::DATE, 185.9, 80.3, '+79990000014'),
+    ('CSKA_Athlete_15', 'Titov_15', 'Denis', 'Evgenievich', 'male', '2001-03-01'::DATE, 182.6, 76.5, '+79990000015'),
+    ('CSKA_Athlete_16', 'Gusev_16', 'Kirill', 'Nikolaevich', 'male', '2001-04-01'::DATE, 187.5, 83.9, '+79990000016'),
+    ('CSKA_Athlete_17', 'Karpov_17', 'Vladimir', 'Olegovich', 'male', '2001-05-01'::DATE, 184.2, 79.4, '+79990000017'),
+    ('CSKA_Athlete_18', 'Mikhailov_18', 'Anton', 'Grigorievich', 'male', '2001-06-01'::DATE, 186.8, 82.2, '+79990000018')
+)
+INSERT INTO Athlete (club_id, last_name, first_name, middle_name, gender, birth_date, phone, height, weight)
+SELECT 
+    (SELECT club_id FROM Club WHERE name = 'CSKA'),
+    column2, column3, column4, column5, column6, column9, column7, column8
+FROM new_athletes
+ON CONFLICT(phone) DO NOTHING;
+
+INSERT INTO Athlete (club_id, last_name, first_name, middle_name, gender, birth_date, phone, height, weight)
+SELECT 
+    (SELECT club_id FROM Club WHERE name = 'Spartak'),
+    last_name, first_name, middle_name, gender, birth_date::DATE, phone, height, weight
+FROM (
+    VALUES 
+    ('Морозов', 'Дмитрий', 'Александрович', 'male', '2002-07-15', '+79020000001', 184.3, 77.5),
+    ('Волкова', 'Екатерина', 'Сергеевна', 'female', '2003-08-22', '+79020000002', 172.1, 62.3),
+    ('Соколов', 'Андрей', 'Игоревич', 'male', '2001-09-10', '+79020000003', 186.5, 81.7),
+    ('Новикова', 'Татьяна', 'Дмитриевна', 'female', '2002-10-05', '+79020000004', 169.8, 59.9),
+    ('Зайцев', 'Максим', 'Павлович', 'male', '2000-11-18', '+79020000005', 189.2, 85.4),
+    ('Лебедева', 'Ольга', 'Николаевна', 'female', '2002-12-25', '+79020000006', 171.5, 61.8)
+) AS data(last_name, first_name, middle_name, gender, birth_date, phone, height, weight)
+ON CONFLICT(phone) DO NOTHING;
+
+-- Добавляем стадионы
+INSERT INTO Stadion (name, address) VALUES 
+('Olympic Stadium', 'Moscow, Olympiysky Prospect'),
+('National Arena', 'Paris, Avenue des Champs-Élysées'),
+('Central Stadium', 'Moscow, Petrovka Street'),
+('Madison Square Garden', 'New York, 4 Pennsylvania Plaza'),
+('Allianz Arena', 'Munich, Werner-Heisenberg-Allee'),
+('Luzhniki', 'Moscow, Luzhniki Street, 24'),
+('Santiago Bernabeu', 'Madrid, Av. de Concha Espina, 1'),
+('VTB Arena', 'Moscow, Leningradsky Prospect, 36'),
+('Otkritie Arena', 'Moscow, Volgogradsky Prospect, 69'),
+('Camp Nou', 'Barcelona, C. d''Aristides Maillol, 12'),
+('Gazprom Arena', 'Saint Petersburg, Football Alley, 1'),
+('Wembley', 'London, Wembley Park');
+
+
+
+INSERT INTO Tournament (name, start_date, end_date, stadion_id, prize_fund) VALUES 
+-- 2024 год
+('Spring Cup', '2024-05-01 09:00:00', '2024-05-31 22:00:00', 
+ (SELECT stadion_id FROM Stadion WHERE name = 'Olympic Stadium'), 750000.00),
+ 
+('Summer Championship', '2024-06-01 10:00:00', '2024-08-31 23:00:00',
+ (SELECT stadion_id FROM Stadion WHERE name = 'National Arena'), 1250000.00),
+ 
+('Autumn League', '2024-09-01 08:00:00', '2024-11-30 21:00:00',
+ (SELECT stadion_id FROM Stadion WHERE name = 'Central Stadium'), 950000.00),
+ 
+('NBA Summer League', '2024-06-01 11:00:00', '2024-08-31 23:59:00',
+ (SELECT stadion_id FROM Stadion WHERE name = 'Madison Square Garden'), 1800000.00),
+ 
+('Winter Classic', '2024-12-01 09:00:00', '2024-12-31 20:00:00',
+ (SELECT stadion_id FROM Stadion WHERE name = 'Allianz Arena'), 800000.00),
+ 
+('European Cup', '2024-07-01 11:00:00', '2024-07-31 23:00:00',
+ (SELECT stadion_id FROM Stadion WHERE name = 'Wembley'), 2000000.00),
+
+-- 2025 год
+('Spring International 2025', '2025-03-01 09:00:00', '2025-03-31 22:00:00',
+ (SELECT stadion_id FROM Stadion WHERE name = 'Luzhniki'), 850000.00),
+ 
+('El Clasico Cup 2025', '2025-04-01 10:00:00', '2025-04-30 21:00:00',
+ (SELECT stadion_id FROM Stadion WHERE name = 'Santiago Bernabeu'), 1200000.00),
+ 
+('Summer Championship 2025', '2025-07-01 08:00:00', '2025-07-31 20:00:00',
+ (SELECT stadion_id FROM Stadion WHERE name = 'Allianz Arena'), 950000.00),
+ 
+('Autumn Tournament 2025', '2025-09-15 09:00:00', '2025-10-15 22:00:00',
+ (SELECT stadion_id FROM Stadion WHERE name = 'VTB Arena'), 700000.00),
+
+-- 2026 год
+('Winter Cup 2026', '2026-01-01 09:00:00', '2026-01-31 22:00:00',
+ (SELECT stadion_id FROM Stadion WHERE name = 'Otkritie Arena'), 900000.00),
+ 
+('Champions League 2026', '2026-02-15 10:00:00', '2026-03-15 21:00:00',
+ (SELECT stadion_id FROM Stadion WHERE name = 'Allianz Arena'), 1500000.00),
+ 
+('Spring Classic 2026', '2026-04-01 08:00:00', '2026-04-30 20:00:00',
+ (SELECT stadion_id FROM Stadion WHERE name = 'Camp Nou'), 1100000.00),
+ 
+('Summer International 2026', '2026-06-01 09:00:00', '2026-06-30 22:00:00',
+ (SELECT stadion_id FROM Stadion WHERE name = 'Gazprom Arena'), 800000.00),
+ 
+('Международный кубок 2026', '2026-11-20 09:00:00', '2026-12-10 22:00:00',
+ (SELECT stadion_id FROM Stadion WHERE name = 'Wembley'), 1500000.00),
+ 
+('Кубок Англии 2026', '2026-12-01 09:00:00', '2026-12-31 22:00:00',
+ (SELECT stadion_id FROM Stadion WHERE name = 'Wembley'), 700000.00),
+ 
+('Зимний кубок 2026', '2026-01-01 09:00:00', '2026-01-31 22:00:00',
+ (SELECT stadion_id FROM Stadion WHERE name = 'Luzhniki'), 500000.00),
+ 
+('Кубок Содружества 2026', '2026-02-01 09:00:00', '2026-02-28 22:00:00',
+ (SELECT stadion_id FROM Stadion WHERE name = 'Luzhniki'), 600000.00),
+ 
+('Московский международный кубок 2026', '2026-03-01 09:00:00', '2026-03-31 22:00:00',
+ (SELECT stadion_id FROM Stadion WHERE name = 'Luzhniki'), 750000.00);
+
+-- Для Spring Cup (предположим, tournament_id = 1)
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'Spring Cup'), 
+ (SELECT club_id FROM Club WHERE name = 'Spartak'), 
+ (SELECT club_id FROM Club WHERE name = 'Dynamo'), 
+ '2024-05-10', '18:30:00', 2, 1),
+((SELECT tournament_id FROM Tournament WHERE name = 'Spring Cup'), 
+ (SELECT club_id FROM Club WHERE name = 'CSKA'), 
+ (SELECT club_id FROM Club WHERE name = 'Lakers'), 
+ '2024-05-12', '19:00:00', 1, 1),
+((SELECT tournament_id FROM Tournament WHERE name = 'Spring Cup'), 
+ (SELECT club_id FROM Club WHERE name = 'Zenit'), 
+ (SELECT club_id FROM Club WHERE name = 'Krasnodar FC'), 
+ '2024-05-15', '17:30:00', 3, 0);
+
+-- Для Summer Championship (tournament_id = 2)
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'Summer Championship'), 
+ (SELECT club_id FROM Club WHERE name = 'PSG'), 
+ (SELECT club_id FROM Club WHERE name = 'Bayern'), 
+ '2024-06-15', '21:00:00', 2, 2),
+((SELECT tournament_id FROM Tournament WHERE name = 'Summer Championship'), 
+ (SELECT club_id FROM Club WHERE name = 'Real Madrid'), 
+ (SELECT club_id FROM Club WHERE name = 'Barcelona'), 
+ '2024-07-10', '20:45:00', 3, 1),
+((SELECT tournament_id FROM Tournament WHERE name = 'Summer Championship'), 
+ (SELECT club_id FROM Club WHERE name = 'London Royals'), 
+ (SELECT club_id FROM Club WHERE name = 'Tokyo Giants'), 
+ '2024-08-05', '19:30:00', 1, 0);
+
+-- Для Autumn League (tournament_id = 3)
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'Autumn League'), 
+ (SELECT club_id FROM Club WHERE name = 'Ural'), 
+ (SELECT club_id FROM Club WHERE name = 'Krasnodar FC'), 
+ '2024-09-15', '17:00:00', 2, 2),
+((SELECT tournament_id FROM Tournament WHERE name = 'Autumn League'), 
+ (SELECT club_id FROM Club WHERE name = 'Dynamo'), 
+ (SELECT club_id FROM Club WHERE name = 'CSKA'), 
+ '2024-10-20', '19:30:00', 1, 0),
+((SELECT tournament_id FROM Tournament WHERE name = 'Autumn League'), 
+ (SELECT club_id FROM Club WHERE name = 'Spartak'), 
+ (SELECT club_id FROM Club WHERE name = 'Zenit'), 
+ '2024-11-05', '18:00:00', 2, 1);
+
+-- Для NBA Summer League (tournament_id = 4)
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'NBA Summer League'), 
+ (SELECT club_id FROM Club WHERE name = 'Lakers'), 
+ (SELECT club_id FROM Club WHERE name = 'Houston Rockets'), 
+ '2024-06-20', '22:00:00', 3, 2),
+((SELECT tournament_id FROM Tournament WHERE name = 'NBA Summer League'), 
+ (SELECT club_id FROM Club WHERE name = 'Lakers'), 
+ (SELECT club_id FROM Club WHERE name = 'CSKA'), 
+ '2024-07-15', '21:30:00', 4, 1),
+((SELECT tournament_id FROM Tournament WHERE name = 'NBA Summer League'), 
+ (SELECT club_id FROM Club WHERE name = 'Houston Rockets'), 
+ (SELECT club_id FROM Club WHERE name = 'Bayern'), 
+ '2024-08-10', '20:00:00', 2, 3);
+
+-- Для Winter Classic (tournament_id = 5)
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'Winter Classic'), 
+ (SELECT club_id FROM Club WHERE name = 'Bayern'), 
+ (SELECT club_id FROM Club WHERE name = 'PSG'), 
+ '2024-12-05', '20:30:00', 2, 1),
+((SELECT tournament_id FROM Tournament WHERE name = 'Winter Classic'), 
+ (SELECT club_id FROM Club WHERE name = 'Real Madrid'), 
+ (SELECT club_id FROM Club WHERE name = 'Barcelona'), 
+ '2024-12-12', '21:00:00', 1, 1),
+((SELECT tournament_id FROM Tournament WHERE name = 'Winter Classic'), 
+ (SELECT club_id FROM Club WHERE name = 'Spartak'), 
+ (SELECT club_id FROM Club WHERE name = 'Dynamo'), 
+ '2024-12-20', '19:00:00', 3, 2);
+
+-- Для European Cup (tournament_id = 6)
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'European Cup'), 
+ (SELECT club_id FROM Club WHERE name = 'England'), 
+ (SELECT club_id FROM Club WHERE name = 'Germany'), 
+ '2024-07-05', '20:00:00', 2, 1),
+((SELECT tournament_id FROM Tournament WHERE name = 'European Cup'), 
+ (SELECT club_id FROM Club WHERE name = 'France'), 
+ (SELECT club_id FROM Club WHERE name = 'Italy'), 
+ '2024-07-12', '20:00:00', 1, 1),
+((SELECT tournament_id FROM Tournament WHERE name = 'European Cup'), 
+ (SELECT club_id FROM Club WHERE name = 'Spain'), 
+ (SELECT club_id FROM Club WHERE name = 'Portugal'), 
+ '2024-07-19', '20:00:00', 3, 0),
+((SELECT tournament_id FROM Tournament WHERE name = 'European Cup'), 
+ (SELECT club_id FROM Club WHERE name = 'England'), 
+ (SELECT club_id FROM Club WHERE name = 'France'), 
+ '2024-07-26', '20:00:00', 1, 0);
+
+-- Для Spring International 2025 (tournament_id = 7)
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'Spring International 2025'), 
+ (SELECT club_id FROM Club WHERE name = 'Spartak'), 
+ (SELECT club_id FROM Club WHERE name = 'CSKA'), 
+ '2025-03-10', '19:30:00', 2, 2),
+((SELECT tournament_id FROM Tournament WHERE name = 'Spring International 2025'), 
+ (SELECT club_id FROM Club WHERE name = 'Dynamo'), 
+ (SELECT club_id FROM Club WHERE name = 'Zenit'), 
+ '2025-03-17', '18:00:00', 1, 0),
+((SELECT tournament_id FROM Tournament WHERE name = 'Spring International 2025'), 
+ (SELECT club_id FROM Club WHERE name = 'Lakers'), 
+ (SELECT club_id FROM Club WHERE name = 'Bayern'), 
+ '2025-03-24', '21:00:00', 3, 1);
+
+-- Для El Clasico Cup 2025 (tournament_id = 8)
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'El Clasico Cup 2025'), 
+ (SELECT club_id FROM Club WHERE name = 'Real Madrid'), 
+ (SELECT club_id FROM Club WHERE name = 'Barcelona'), 
+ '2025-04-05', '21:00:00', 2, 1),
+((SELECT tournament_id FROM Tournament WHERE name = 'El Clasico Cup 2025'), 
+ (SELECT club_id FROM Club WHERE name = 'Real Madrid'), 
+ (SELECT club_id FROM Club WHERE name = 'Barcelona'), 
+ '2025-04-12', '21:00:00', 1, 2),
+((SELECT tournament_id FROM Tournament WHERE name = 'El Clasico Cup 2025'), 
+ (SELECT club_id FROM Club WHERE name = 'Real Madrid'), 
+ (SELECT club_id FROM Club WHERE name = 'Barcelona'), 
+ '2025-04-19', '21:00:00', 3, 3);
+
+-- Для Summer Championship 2025 (tournament_id = 9)
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'Summer Championship 2025'), 
+ (SELECT club_id FROM Club WHERE name = 'Bayern'), 
+ (SELECT club_id FROM Club WHERE name = 'PSG'), 
+ '2025-07-05', '20:30:00', 2, 0),
+((SELECT tournament_id FROM Tournament WHERE name = 'Summer Championship 2025'), 
+ (SELECT club_id FROM Club WHERE name = 'Real Madrid'), 
+ (SELECT club_id FROM Club WHERE name = 'Barcelona'), 
+ '2025-07-12', '21:00:00', 1, 1),
+((SELECT tournament_id FROM Tournament WHERE name = 'Summer Championship 2025'), 
+ (SELECT club_id FROM Club WHERE name = 'London Royals'), 
+ (SELECT club_id FROM Club WHERE name = 'Tokyo Giants'), 
+ '2025-07-19', '19:30:00', 2, 1),
+((SELECT tournament_id FROM Tournament WHERE name = 'Summer Championship 2025'), 
+ (SELECT club_id FROM Club WHERE name = 'Spartak'), 
+ (SELECT club_id FROM Club WHERE name = 'Dynamo'), 
+ '2025-07-26', '18:30:00', 1, 2);
+
+-- Для Autumn Tournament 2025 (tournament_id = 10)
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'Autumn Tournament 2025'), 
+ (SELECT club_id FROM Club WHERE name = 'CSKA'), 
+ (SELECT club_id FROM Club WHERE name = 'Dynamo'), 
+ '2025-09-20', '19:00:00', 2, 1),
+((SELECT tournament_id FROM Tournament WHERE name = 'Autumn Tournament 2025'), 
+ (SELECT club_id FROM Club WHERE name = 'Spartak'), 
+ (SELECT club_id FROM Club WHERE name = 'Zenit'), 
+ '2025-09-27', '18:30:00', 1, 1),
+((SELECT tournament_id FROM Tournament WHERE name = 'Autumn Tournament 2025'), 
+ (SELECT club_id FROM Club WHERE name = 'Ural'), 
+ (SELECT club_id FROM Club WHERE name = 'Krasnodar FC'), 
+ '2025-10-04', '17:00:00', 0, 2),
+((SELECT tournament_id FROM Tournament WHERE name = 'Autumn Tournament 2025'), 
+ (SELECT club_id FROM Club WHERE name = 'Lakers'), 
+ (SELECT club_id FROM Club WHERE name = 'Bayern'), 
+ '2025-10-11', '21:00:00', 3, 2);
+
+-- Для Winter Cup 2026 (tournament_id = 11)
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'Winter Cup 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Spartak'), 
+ (SELECT club_id FROM Club WHERE name = 'CSKA'), 
+ '2026-01-10', '18:00:00', 2, 1),
+((SELECT tournament_id FROM Tournament WHERE name = 'Winter Cup 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Dynamo'), 
+ (SELECT club_id FROM Club WHERE name = 'Zenit'), 
+ '2026-01-17', '18:00:00', 1, 0),
+((SELECT tournament_id FROM Tournament WHERE name = 'Winter Cup 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Lakers'), 
+ (SELECT club_id FROM Club WHERE name = 'Bayern'), 
+ '2026-01-24', '21:00:00', 3, 2);
+
+-- Для Champions League 2026 (tournament_id = 12)
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'Champions League 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Real Madrid'), 
+ (SELECT club_id FROM Club WHERE name = 'Bayern'), 
+ '2026-02-20', '21:00:00', 2, 1),
+((SELECT tournament_id FROM Tournament WHERE name = 'Champions League 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Barcelona'), 
+ (SELECT club_id FROM Club WHERE name = 'PSG'), 
+ '2026-02-27', '21:00:00', 1, 1),
+((SELECT tournament_id FROM Tournament WHERE name = 'Champions League 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Spartak'), 
+ (SELECT club_id FROM Club WHERE name = 'CSKA'), 
+ '2026-03-06', '20:00:00', 3, 2),
+((SELECT tournament_id FROM Tournament WHERE name = 'Champions League 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Bayern'), 
+ (SELECT club_id FROM Club WHERE name = 'Barcelona'), 
+ '2026-03-13', '21:00:00', 2, 2);
+
+-- Для Spring Classic 2026 (tournament_id = 13)
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'Spring Classic 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Barcelona'), 
+ (SELECT club_id FROM Club WHERE name = 'Real Madrid'), 
+ '2026-04-05', '21:00:00', 1, 2),
+((SELECT tournament_id FROM Tournament WHERE name = 'Spring Classic 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'PSG'), 
+ (SELECT club_id FROM Club WHERE name = 'Bayern'), 
+ '2026-04-12', '20:30:00', 2, 0),
+((SELECT tournament_id FROM Tournament WHERE name = 'Spring Classic 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Spartak'), 
+ (SELECT club_id FROM Club WHERE name = 'Dynamo'), 
+ '2026-04-19', '18:30:00', 2, 2),
+((SELECT tournament_id FROM Tournament WHERE name = 'Spring Classic 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Zenit'), 
+ (SELECT club_id FROM Club WHERE name = 'CSKA'), 
+ '2026-04-26', '19:00:00', 1, 0);
+
+-- Для Summer International 2026 (tournament_id = 14)
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'Summer International 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Zenit'), 
+ (SELECT club_id FROM Club WHERE name = 'Spartak'), 
+ '2026-06-05', '19:30:00', 2, 1),
+((SELECT tournament_id FROM Tournament WHERE name = 'Summer International 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'CSKA'), 
+ (SELECT club_id FROM Club WHERE name = 'Dynamo'), 
+ '2026-06-12', '18:00:00', 1, 1),
+((SELECT tournament_id FROM Tournament WHERE name = 'Summer International 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Lakers'), 
+ (SELECT club_id FROM Club WHERE name = 'Bayern'), 
+ '2026-06-19', '21:00:00', 3, 2),
+((SELECT tournament_id FROM Tournament WHERE name = 'Summer International 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'PSG'), 
+ (SELECT club_id FROM Club WHERE name = 'London Royals'), 
+ '2026-06-26', '20:30:00', 2, 0);
+
+-- Для Международный кубок 2026 (tournament_id = 15)
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'Международный кубок 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'England'), 
+ (SELECT club_id FROM Club WHERE name = 'Germany'), 
+ '2026-11-25', '20:00:00', 2, 0),
+((SELECT tournament_id FROM Tournament WHERE name = 'Международный кубок 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'England'), 
+ (SELECT club_id FROM Club WHERE name = 'France'), 
+ '2026-11-28', '20:00:00', 1, 1),
+((SELECT tournament_id FROM Tournament WHERE name = 'Международный кубок 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'England'), 
+ (SELECT club_id FROM Club WHERE name = 'Italy'), 
+ '2026-12-02', '20:00:00', 3, 2);
+
+-- Для Кубок Англии 2026 (tournament_id = 16)
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'Кубок Англии 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Tottenham'), 
+ (SELECT club_id FROM Club WHERE name = 'Arsenal'), 
+ '2026-12-15', '19:45:00', 1, 1),
+((SELECT tournament_id FROM Tournament WHERE name = 'Кубок Англии 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Tottenham'), 
+ (SELECT club_id FROM Club WHERE name = 'Chelsea'), 
+ '2026-12-22', '19:45:00', 2, 3),
+((SELECT tournament_id FROM Tournament WHERE name = 'Кубок Англии 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Tottenham'), 
+ (SELECT club_id FROM Club WHERE name = 'Liverpool'), 
+ '2026-12-29', '19:45:00', 0, 2);
+
+-- Для Зимний кубок 2026 (tournament_id = 17)
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'Зимний кубок 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Spartak'), 
+ (SELECT club_id FROM Club WHERE name = 'CSKA'), 
+ '2026-01-10', '18:00:00', 2, 1),
+((SELECT tournament_id FROM Tournament WHERE name = 'Зимний кубок 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Spartak'), 
+ (SELECT club_id FROM Club WHERE name = 'Dynamo'), 
+ '2026-01-17', '18:00:00', 1, 1),
+((SELECT tournament_id FROM Tournament WHERE name = 'Зимний кубок 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Spartak'), 
+ (SELECT club_id FROM Club WHERE name = 'Zenit'), 
+ '2026-01-24', '18:00:00', 3, 0);
+
+-- Для Кубок Содружества 2026 (tournament_id = 18)
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'Кубок Содружества 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'CSKA'), 
+ (SELECT club_id FROM Club WHERE name = 'Dynamo'), 
+ '2026-02-10', '19:00:00', 2, 0),
+((SELECT tournament_id FROM Tournament WHERE name = 'Кубок Содружества 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'CSKA'), 
+ (SELECT club_id FROM Club WHERE name = 'Zenit'), 
+ '2026-02-17', '19:00:00', 1, 2),
+((SELECT tournament_id FROM Tournament WHERE name = 'Кубок Содружества 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'CSKA'), 
+ (SELECT club_id FROM Club WHERE name = 'Spartak'), 
+ '2026-02-24', '19:00:00', 0, 1);
+
+-- Для Московский международный кубок 2026 (tournament_id = 19)
+INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2) VALUES 
+((SELECT tournament_id FROM Tournament WHERE name = 'Московский международный кубок 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Dynamo'), 
+ (SELECT club_id FROM Club WHERE name = 'CSKA'), 
+ '2026-03-05', '20:00:00', 1, 1),
+((SELECT tournament_id FROM Tournament WHERE name = 'Московский международный кубок 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Dynamo'), 
+ (SELECT club_id FROM Club WHERE name = 'Spartak'), 
+ '2026-03-12', '20:00:00', 2, 3),
+((SELECT tournament_id FROM Tournament WHERE name = 'Московский международный кубок 2026'), 
+ (SELECT club_id FROM Club WHERE name = 'Dynamo'), 
+ (SELECT club_id FROM Club WHERE name = 'Zenit'), 
+ '2026-03-19', '20:00:00', 0, 0);
