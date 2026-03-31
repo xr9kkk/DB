@@ -1438,3 +1438,196 @@ INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, re
  (SELECT club_id FROM Club WHERE name = 'Dynamo'), 
  (SELECT club_id FROM Club WHERE name = 'Zenit'), 
  '2026-03-19', '20:00:00', 0, 0);
+ ---------------------------------------------------------
+-- Создаём клуб с датой основания 2023 год
+INSERT INTO Club (name, city_id, foundation_date) VALUES 
+('Young Stars FC', (SELECT city_id FROM City WHERE name = 'Moscow'), '2023-01-15')
+ON CONFLICT(name, city_id) DO NOTHING;
+
+-- Создаём спонсора-организацию
+INSERT INTO Sponsor (sponsor_type, registration_date, contact_phone) VALUES 
+('org', '2023-01-10', '+74951112233');
+
+-- Добавляем организацию-спонсора
+INSERT INTO sponsor_org (sponsor_id, inn, org_name, phone) VALUES 
+((SELECT sponsor_id FROM Sponsor WHERE contact_phone = '+74951112233'), '77019888888', 'LongTerm Partners', 7495111223)
+ON CONFLICT(sponsor_id) DO NOTHING;
+
+-- Добавляем спонсорские взносы за каждый год с 2023 по 2026 (каждый год)
+INSERT INTO Sponsorship (club_id, sponsor_id, donation_date, donation_amount, purpose) VALUES 
+((SELECT club_id FROM Club WHERE name = 'Young Stars FC'), 
+ (SELECT sponsor_id FROM Sponsor WHERE contact_phone = '+74951112233'), 
+ '2023-06-01', 500000.00, 'Foundation Support'),
+
+((SELECT club_id FROM Club WHERE name = 'Young Stars FC'), 
+ (SELECT sponsor_id FROM Sponsor WHERE contact_phone = '+74951112233'), 
+ '2024-06-01', 550000.00, 'Annual Support'),
+
+((SELECT club_id FROM Club WHERE name = 'Young Stars FC'), 
+ (SELECT sponsor_id FROM Sponsor WHERE contact_phone = '+74951112233'), 
+ '2025-06-01', 600000.00, 'Annual Support'),
+
+((SELECT club_id FROM Club WHERE name = 'Young Stars FC'), 
+ (SELECT sponsor_id FROM Sponsor WHERE contact_phone = '+74951112233'), 
+ '2026-06-01', 650000.00, 'Annual Support');
+
+-- Наивысший разряд - Grandmaster (ЗМС)
+-- Добавляем спортсменов с разрядом Grandmaster в разные клубы
+
+-- Спортсмен в Spartak
+INSERT INTO Athlete (club_id, last_name, first_name, middle_name, gender, birth_date, phone, height, weight) VALUES 
+((SELECT club_id FROM Club WHERE name = 'Spartak'), 'Champion', 'Victor', 'Petrovich', 'male', '1995-03-15', '+79169998881', 190.5, 85.2)
+ON CONFLICT(phone) DO NOTHING;
+
+INSERT INTO Rank (athlete_id, assignment_date, rank_title_id) VALUES 
+((SELECT athlete_id FROM Athlete WHERE phone = '+79169998881'), '2024-12-10', 
+ (SELECT rank_title_id FROM Rank_title WHERE rank_title = 'Grandmaster'))
+ON CONFLICT(athlete_id, rank_title_id) DO NOTHING;
+
+-- Спортсмен в CSKA
+INSERT INTO Athlete (club_id, last_name, first_name, middle_name, gender, birth_date, phone, height, weight) VALUES 
+((SELECT club_id FROM Club WHERE name = 'CSKA'), 'Star', 'Alexander', 'Sergeevich', 'male', '1996-07-20', '+79169998882', 192.0, 88.5)
+ON CONFLICT(phone) DO NOTHING;
+
+INSERT INTO Rank (athlete_id, assignment_date, rank_title_id) VALUES 
+((SELECT athlete_id FROM Athlete WHERE phone = '+79169998882'), '2024-11-15', 
+ (SELECT rank_title_id FROM Rank_title WHERE rank_title = 'Grandmaster'))
+ON CONFLICT(athlete_id, rank_title_id) DO NOTHING;
+
+-- Спортсмен в Bayern
+INSERT INTO Athlete (club_id, last_name, first_name, middle_name, gender, birth_date, phone, height, weight) VALUES 
+((SELECT club_id FROM Club WHERE name = 'Bayern'), 'Meister', 'Hans', 'Peter', 'male', '1994-12-05', '+49891234001', 188.0, 84.0)
+ON CONFLICT(phone) DO NOTHING;
+
+INSERT INTO Rank (athlete_id, assignment_date, rank_title_id) VALUES 
+((SELECT athlete_id FROM Athlete WHERE phone = '+49891234001'), '2024-10-20', 
+ (SELECT rank_title_id FROM Rank_title WHERE rank_title = 'Grandmaster'))
+ON CONFLICT(athlete_id, rank_title_id) DO NOTHING;
+
+-- Создаём спонсора, который спонсирует оба клуба (Spartak и CSKA)
+INSERT INTO Sponsor (sponsor_type, registration_date, contact_phone) VALUES 
+('org', '2020-01-01', '+74951119999');
+
+INSERT INTO sponsor_org (sponsor_id, inn, org_name, phone) VALUES 
+((SELECT sponsor_id FROM Sponsor WHERE contact_phone = '+74951119999'), '77011112222', 'Global Sports', 7495111999)
+ON CONFLICT(sponsor_id) DO NOTHING;
+
+-- Спонсорские взносы в Spartak
+INSERT INTO Sponsorship (club_id, sponsor_id, donation_date, donation_amount, purpose) VALUES 
+((SELECT club_id FROM Club WHERE name = 'Spartak'), 
+ (SELECT sponsor_id FROM Sponsor WHERE contact_phone = '+74951119999'), 
+ '2025-01-15', 800000.00, 'Elite Training'),
+
+((SELECT club_id FROM Club WHERE name = 'Spartak'), 
+ (SELECT sponsor_id FROM Sponsor WHERE contact_phone = '+74951119999'), 
+ '2026-01-15', 850000.00, 'Elite Training');
+
+-- Спонсорские взносы в CSKA
+INSERT INTO Sponsorship (club_id, sponsor_id, donation_date, donation_amount, purpose) VALUES 
+((SELECT club_id FROM Club WHERE name = 'CSKA'), 
+ (SELECT sponsor_id FROM Sponsor WHERE contact_phone = '+74951119999'), 
+ '2025-02-10', 750000.00, 'Elite Program'),
+
+((SELECT club_id FROM Club WHERE name = 'CSKA'), 
+ (SELECT sponsor_id FROM Sponsor WHERE contact_phone = '+74951119999'), 
+ '2026-02-10', 780000.00, 'Elite Program');
+
+ ------------------------------------------------------
+-- Создаём турнир
+INSERT INTO Tournament (name, start_date, end_date, stadion_id, prize_fund) VALUES 
+('World Mega Championship', '2026-12-01 10:00:00', '2026-12-31 22:00:00', 
+ (SELECT stadion_id FROM Stadion WHERE name = 'Wembley' LIMIT 1), 5000000.00);
+
+-- ВАЖНО: Очищаем старые матчи этого турнира, если есть
+DELETE FROM Match WHERE tournament_id = (SELECT tournament_id FROM Tournament WHERE name = 'World Mega Championship');
+
+-- Получаем ID всех клубов в массив для удобства
+DO $$
+DECLARE
+    tournament_id_var INTEGER;
+    club_record RECORD;
+    club_list INTEGER[];
+    club_count INTEGER;
+    i INTEGER;
+    j INTEGER;
+BEGIN
+    -- Получаем ID турнира
+    SELECT tournament_id INTO tournament_id_var FROM Tournament WHERE name = 'World Mega Championship';
+    
+    -- Собираем все ID клубов в массив
+    SELECT ARRAY(SELECT club_id FROM Club ORDER BY club_id) INTO club_list;
+    club_count := array_length(club_list, 1);
+    
+    -- Для каждого клуба создаём хотя бы один матч
+    FOR i IN 1..club_count LOOP
+        -- Для каждого клуба находим парного клуба (соседний или первый)
+        IF i < club_count THEN
+            j := i + 1;
+        ELSE
+            j := 1; -- последний клуб играет с первым
+        END IF;
+        
+        -- Вставляем матч
+        INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2)
+        VALUES (
+            tournament_id_var,
+            club_list[i],
+            club_list[j],
+            '2026-12-05'::DATE + (i * 2)::INT,
+            '19:00:00'::TIME,
+            floor(random() * 5)::INT,
+            floor(random() * 5)::INT
+        );
+        
+        -- Добавляем второй матч для надёжности (реванш)
+        INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2)
+        VALUES (
+            tournament_id_var,
+            club_list[j],
+            club_list[i],
+            '2026-12-10'::DATE + (i * 2)::INT,
+            '21:00:00'::TIME,
+            floor(random() * 5)::INT,
+            floor(random() * 5)::INT
+        );
+    END LOOP;
+    
+    -- Дополнительно: создаём круговой турнир для малых клубов (первые 20)
+    FOR i IN 1..LEAST(club_count, 20) LOOP
+        FOR j IN i+1..LEAST(club_count, 20) LOOP
+            INSERT INTO Match (tournament_id, club1_id, club2_id, match_date, match_time, result_1, result_2)
+            VALUES (
+                tournament_id_var,
+                club_list[i],
+                club_list[j],
+                '2026-12-15'::DATE + (i * j)::INT,
+                '18:30:00'::TIME,
+                floor(random() * 4)::INT,
+                floor(random() * 4)::INT
+            )
+            ON CONFLICT DO NOTHING;
+        END LOOP;
+    END LOOP;
+END $$;
+
+
+SELECT COUNT(*) FROM Club;
+
+SELECT COUNT(DISTINCT CASE 
+    WHEN m.club1_id = c.club_id OR m.club2_id = c.club_id THEN c.club_id 
+END) as clubs_in_tournament
+FROM Tournament t
+LEFT JOIN Match m ON m.tournament_id = t.tournament_id
+LEFT JOIN Club c ON c.club_id = m.club1_id OR c.club_id = m.club2_id
+WHERE t.name = 'World Mega Championship';
+
+
+SELECT c.club_id, c.name
+FROM Club c
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM Match m
+    WHERE m.tournament_id = (SELECT tournament_id FROM Tournament WHERE name = 'World Mega Championship')
+    AND (m.club1_id = c.club_id OR m.club2_id = c.club_id)
+);
+
