@@ -625,8 +625,8 @@ WHERE a.club_id IN (
 )
 ORDER BY a.last_name, a.first_name;
 
---37. Выбрать названия клубов, которые приняли участие в
---двух и более соревнованиях и в которых есть игроки с наибольшим разрядом. 
+37. Выбрать названия клубов, которые приняли участие в
+двух и более соревнованиях и в которых есть игроки с наибольшим разрядом. 
 
 SELECT c.name
 FROM Club c
@@ -643,7 +643,31 @@ WHERE NOT EXISTS (
 GROUP BY c.club_id, c.name
 HAVING COUNT(DISTINCT m.tournament_id) >= 2;
 
---38. Выбрать все данные спонсора, который каждый год делает взносы с момента образования клуба. 
+альтернативный вариант
+Использование оконной функции в подзапросе
+
+SELECT DISTINCT c.name
+FROM Club c
+JOIN (
+    SELECT DISTINCT
+        a.club_id,
+        FIRST_VALUE(rt.rank_title_id) OVER (
+            PARTITION BY a.athlete_id 
+            ORDER BY r.assignment_date DESC
+        ) AS current_rank_id
+    FROM Athlete a
+    JOIN Rank r ON r.athlete_id = a.athlete_id
+    JOIN Rank_title rt ON rt.rank_title_id = r.rank_title_id
+) ahr ON ahr.club_id = c.club_id
+JOIN Match m ON c.club_id IN (m.club1_id, m.club2_id)
+WHERE NOT EXISTS (
+    SELECT 1 FROM Rank_title rt2 
+    WHERE rt2.previous_rank_id = ahr.current_rank_id
+)
+GROUP BY c.club_id, c.name
+HAVING COUNT(DISTINCT m.tournament_id) >= 2;
+
+38. Выбрать все данные спонсора, который каждый год делает взносы с момента образования клуба. 
 
 SELECT s.*
 FROM Sponsor s
@@ -653,6 +677,27 @@ GROUP BY s.sponsor_id, c.club_id, c.foundation_date
 HAVING COUNT(DISTINCT EXTRACT(YEAR FROM sp.donation_date)) =
        EXTRACT(YEAR FROM CURRENT_DATE) - 
        EXTRACT(YEAR FROM c.foundation_date) + 1;
+
+альтернативный вариант
+Для каждого клуба-спонсора считаем количество взносов и сравниваем с количеством лет
+
+SELECT s.*
+FROM Sponsor s
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM Club c
+    WHERE EXISTS (
+        SELECT 1 FROM Sponsorship sp 
+        WHERE sp.sponsor_id = s.sponsor_id AND sp.club_id = c.club_id
+    )
+    AND (
+        SELECT COUNT(*)
+        FROM Sponsorship sp
+        WHERE sp.sponsor_id = s.sponsor_id AND sp.club_id = c.club_id
+    ) <> (
+        EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM c.foundation_date) + 1
+    )
+);
 
 39. Выбрать все данные спонсора, который делает взносы
 для нескольких клубов, но в каждом из этих клубов есть спортсмены с разрядами и наградами.
@@ -666,6 +711,26 @@ JOIN Rank r ON r.athlete_id = a.athlete_id
 JOIN Award aw ON aw.athlete_id = a.athlete_id
 GROUP BY s.sponsor_id
 HAVING COUNT(DISTINCT c.club_id) > 1;
+
+альтернативный вариант 
+проверка через MIN количества наград и разрядов по клубам
+
+SELECT s.*
+FROM Sponsor s
+JOIN Sponsorship sp ON sp.sponsor_id = s.sponsor_id
+JOIN Club c ON c.club_id = sp.club_id
+GROUP BY s.sponsor_id
+HAVING COUNT(DISTINCT c.club_id) > 1
+   AND MIN(
+       (SELECT COUNT(*) FROM Athlete a 
+        JOIN Rank r ON r.athlete_id = a.athlete_id
+        WHERE a.club_id = c.club_id)
+   ) > 0
+   AND MIN(
+       (SELECT COUNT(*) FROM Athlete a 
+        JOIN Award aw ON aw.athlete_id = a.athlete_id
+        WHERE a.club_id = c.club_id)
+   ) > 0;
 
 40. Выбрать все данные спонсора, который делает взносы
 для нескольких клубов, но в каждом из этих клубов есть спортсмены с наивысшим разрядом.
@@ -685,15 +750,55 @@ WHERE NOT EXISTS (
 GROUP BY s.sponsor_id
 HAVING COUNT(DISTINCT c.club_id) > 1;
 
+альтернативный вариант
+через COUNT и сравнение количества клубов
+
+SELECT s.*
+FROM Sponsor s
+JOIN Sponsorship sp ON sp.sponsor_id = s.sponsor_id
+JOIN Club c ON c.club_id = sp.club_id
+GROUP BY s.sponsor_id
+HAVING COUNT(DISTINCT c.club_id) > 1
+   AND COUNT(DISTINCT CASE 
+       WHEN EXISTS (
+           SELECT 1 FROM Athlete a
+           JOIN Rank r ON r.athlete_id = a.athlete_id
+           JOIN Rank_title rt ON rt.rank_title_id = r.rank_title_id
+           WHERE a.club_id = c.club_id
+           AND NOT EXISTS (
+               SELECT 1 FROM Rank_title rt2
+               WHERE rt2.previous_rank_id = rt.rank_title_id
+           )
+       ) THEN c.club_id 
+   END) = COUNT(DISTINCT c.club_id);
+
 41. Выбрать id и фамилию и инициалы спортсменов, название разряда на начало прошлого года.
 
-SELECT a.athlete_id,
-       a.last_name || ' ' || LEFT(a.first_name,1) || '.' AS fio,
-       rt.rank_title
+SELECT 
+    a.athlete_id,
+    a.last_name || ' ' || LEFT(a.first_name, 1) || '.' AS fio,
+    r.assignment_date,
+    rt.rank_title
 FROM Athlete a
 JOIN Rank r ON r.athlete_id = a.athlete_id
 JOIN Rank_title rt ON rt.rank_title_id = r.rank_title_id
-WHERE r.assignment_date <= date_trunc('year', CURRENT_DATE) - INTERVAL '1 year';
+WHERE EXTRACT(YEAR FROM r.assignment_date) = 2024
+ORDER BY a.athlete_id, r.assignment_date DESC;
+
+альтернативный вариант
+через  >= < самый результативный, если есть индекс по дате присвоения
+
+SELECT 
+    a.athlete_id,
+    a.last_name || ' ' || LEFT(a.first_name, 1) || '.' AS fio,
+    r.assignment_date,
+    rt.rank_title
+FROM Athlete a
+JOIN Rank r ON r.athlete_id = a.athlete_id
+JOIN Rank_title rt ON rt.rank_title_id = r.rank_title_id
+WHERE r.assignment_date >= '2024-01-01' 
+  AND r.assignment_date < '2025-01-01'
+ORDER BY a.athlete_id, r.assignment_date DESC;
 
 42. Выбрать фамилию и инициалы спонсоров, спортсменов и
 работников. В результирующей таблице должно быть два столбца:
@@ -710,6 +815,20 @@ SELECT last_name || ' ' || LEFT(first_name,1) || '.', 'Работник'
 FROM Employee
 ORDER BY fio;
 
+альтернативный вариант
+
+SELECT 
+    t.last_name || ' ' || LEFT(t.first_name, 1) || '.' AS fio,
+    t.type
+FROM (
+    SELECT last_name, first_name, 'Спортсмен' AS type FROM Athlete
+    UNION ALL
+    SELECT last_name, first_name, 'Спонсор' FROM sponsor_person
+    UNION ALL
+    SELECT last_name, first_name, 'Работник' FROM Employee
+) t
+ORDER BY fio;
+
 43. Выбрать общее количество всех однофамильцев.
 
 SELECT SUM(cnt - 1) AS total_same_lastnames
@@ -719,6 +838,14 @@ FROM (
     GROUP BY last_name
     HAVING COUNT(*) > 1
 ) t;
+
+альтернативный вариант
+с использованием оконных функций
+SELECT SUM(COUNT(*) - 1) OVER () AS total_same_lastnames
+FROM Athlete
+GROUP BY last_name
+HAVING COUNT(*) > 1
+LIMIT 1;
 
 44. Вывести сообщение, кого больше среди спортсменов
 мужчин или женщин.
@@ -735,6 +862,15 @@ FROM (
     FROM Athlete
 ) t;
 
+альтернативный вариант
+с использованием SIGN
+SELECT CASE SIGN(SUM(CASE WHEN gender = 'male' THEN 1 ELSE -1 END))
+    WHEN 1 THEN 'Больше мужчин'
+    WHEN -1 THEN 'Больше женщин'
+    ELSE 'Поровну'
+END
+FROM Athlete;
+
 45. Выбрать фамилии, имена, отчества трех самых высоких
 спортсменов.
 
@@ -742,6 +878,15 @@ SELECT last_name, first_name, middle_name
 FROM Athlete
 ORDER BY height DESC
 LIMIT 3;
+
+альтернативный вариант
+с использованием оконной функции ROW_NUMBER
+SELECT last_name, first_name, middle_name
+FROM (
+    SELECT *, ROW_NUMBER() OVER (ORDER BY height DESC) AS rn
+    FROM Athlete
+) t
+WHERE rn <= 3;
 
 46. Выбрать всю иерархию разрядов.
 
@@ -758,6 +903,9 @@ WITH RECURSIVE r AS (
 )
 SELECT * FROM r;
 
+альтернативный вариант хмммм
+
+
 47. Выбрать фамилию, имя, отчество спортсмена и названия
 его первой и последней награды.
 
@@ -769,6 +917,32 @@ JOIN Award aw ON aw.athlete_id = a.athlete_id
 JOIN Award_type at ON at.award_type_id = aw.award_type_id
 GROUP BY a.athlete_id;
 
+альтернативный вариант с лимит
+
+SELECT 
+    a.last_name,
+    a.first_name,
+    a.middle_name,
+    (
+        SELECT at.award_name
+        FROM Award aw
+        JOIN Award_type at ON at.award_type_id = aw.award_type_id
+        WHERE aw.athlete_id = a.athlete_id
+        ORDER BY aw.award_date
+        LIMIT 1
+    ) AS first_award,
+    (
+        SELECT at.award_name
+        FROM Award aw
+        JOIN Award_type at ON at.award_type_id = aw.award_type_id
+        WHERE aw.athlete_id = a.athlete_id
+        ORDER BY aw.award_date DESC
+        LIMIT 1
+    ) AS last_award
+FROM Athlete a
+WHERE EXISTS (SELECT 1 FROM Award WHERE athlete_id = a.athlete_id)
+ORDER BY a.last_name, a.first_name;
+
 48. Выбрать спортсмена, который «перепрыгнул» через разряд, т. е. нарушил правильную иерархию разрядов.
 
 SELECT DISTINCT a.*
@@ -779,6 +953,9 @@ JOIN Rank_title rt1 ON rt1.rank_title_id = r1.rank_title_id
 JOIN Rank_title rt2 ON rt2.rank_title_id = r2.rank_title_id
 WHERE rt2.previous_rank_id IS NOT NULL
 AND rt1.rank_title_id <> rt2.previous_rank_id;
+
+альтернативный варик
+--
 
 49. Выбрать название клуба, количество спортсменов, количество соревнований, в которых клуб принимал участие, общее
 количество соревнований, процент участия в соревнованиях.
@@ -792,6 +969,25 @@ FROM Club c
 LEFT JOIN Athlete a ON a.club_id = c.club_id
 LEFT JOIN Match m ON m.club1_id = c.club_id OR m.club2_id = c.club_id
 GROUP BY c.club_id;
+
+альтернативный вариант
+с оконными функциями
+
+WITH totals AS (
+    SELECT COUNT(*) AS total_matches FROM Match
+)
+SELECT 
+    c.name,
+    COUNT(DISTINCT a.athlete_id) AS athletes,
+    COUNT(DISTINCT m.match_id) AS matches,
+    t.total_matches,
+    COUNT(DISTINCT m.match_id) * 100.0 / t.total_matches AS percent
+FROM Club c
+CROSS JOIN totals t
+LEFT JOIN Athlete a ON a.club_id = c.club_id
+LEFT JOIN Match m ON c.club_id IN (m.club1_id, m.club2_id)
+GROUP BY c.club_id, c.name, t.total_matches
+ORDER BY c.name;
 
 50. Выбрать все данные соревнования, в котором приняли
 участие все клубы.
@@ -809,6 +1005,18 @@ WHERE NOT EXISTS (
     )
 );
 
+альтернативный вариант
+через сравнение количества клубов
+SELECT t.*
+FROM Tournament t
+JOIN Match m ON m.tournament_id = t.tournament_id
+GROUP BY t.tournament_id
+HAVING COUNT(DISTINCT 
+    CASE WHEN m.club1_id IS NOT NULL THEN m.club1_id 
+         WHEN m.club2_id IS NOT NULL THEN m.club2_id 
+    END
+) = (SELECT COUNT(*) FROM Club);
+
 51. Выбрать все данные соревнования, в котором приняло
 участие наибольшее количество клубов. 
 
@@ -818,3 +1026,17 @@ JOIN Match m ON m.tournament_id = t.tournament_id
 GROUP BY t.tournament_id
 ORDER BY COUNT(DISTINCT m.club1_id) + COUNT(DISTINCT m.club2_id) DESC
 LIMIT 1;
+
+альтернативный вариант
+с использованием оконной функции
+WITH tournament_rank AS (
+    SELECT 
+        t.*,
+        RANK() OVER (ORDER BY COUNT(DISTINCT m.club1_id) + COUNT(DISTINCT m.club2_id) DESC) AS rnk
+    FROM Tournament t
+    JOIN Match m ON m.tournament_id = t.tournament_id
+    GROUP BY t.tournament_id
+)
+SELECT *
+FROM tournament_rank
+WHERE rnk = 1;
