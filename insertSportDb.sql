@@ -1611,23 +1611,3 @@ BEGIN
 END $$;
 
 
-SELECT COUNT(*) FROM Club;
-
-SELECT COUNT(DISTINCT CASE 
-    WHEN m.club1_id = c.club_id OR m.club2_id = c.club_id THEN c.club_id 
-END) as clubs_in_tournament
-FROM Tournament t
-LEFT JOIN Match m ON m.tournament_id = t.tournament_id
-LEFT JOIN Club c ON c.club_id = m.club1_id OR c.club_id = m.club2_id
-WHERE t.name = 'World Mega Championship';
-
-
-SELECT c.club_id, c.name
-FROM Club c
-WHERE NOT EXISTS (
-    SELECT 1
-    FROM Match m
-    WHERE m.tournament_id = (SELECT tournament_id FROM Tournament WHERE name = 'World Mega Championship')
-    AND (m.club1_id = c.club_id OR m.club2_id = c.club_id)
-);
-

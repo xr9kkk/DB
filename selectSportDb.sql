@@ -633,8 +633,7 @@ FROM Club c
 JOIN Athlete a ON a.club_id = c.club_id
 JOIN Rank r ON r.athlete_id = a.athlete_id
 JOIN Rank_title rt ON rt.rank_title_id = r.rank_title_id
-JOIN Match m 
-     ON c.club_id IN (m.club1_id, m.club2_id)
+JOIN Match m ON c.club_id IN (m.club1_id, m.club2_id)
 WHERE NOT EXISTS (
       SELECT 1
       FROM Rank_title r2
@@ -691,7 +690,7 @@ WHERE NOT EXISTS (
         WHERE sp.sponsor_id = s.sponsor_id AND sp.club_id = c.club_id
     )
     AND (
-        SELECT COUNT(*)
+        SELECT COUNT(DISTINCT EXTRACT(YEAR FROM sp.donation_date))
         FROM Sponsorship sp
         WHERE sp.sponsor_id = s.sponsor_id AND sp.club_id = c.club_id
     ) <> (
