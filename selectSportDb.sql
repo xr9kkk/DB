@@ -628,6 +628,8 @@ ORDER BY a.last_name, a.first_name;
 37. Выбрать названия клубов, которые приняли участие в
 двух и более соревнованиях и в которых есть игроки с наибольшим разрядом. 
 
+альтернативный вариант попробовать через соединение таблиц
+нужно чтобы было два и более матча
 SELECT c.name
 FROM Club c
 JOIN Athlete a ON a.club_id = c.club_id
@@ -637,13 +639,13 @@ JOIN Match m ON c.club_id IN (m.club1_id, m.club2_id)
 WHERE NOT EXISTS (
       SELECT 1
       FROM Rank_title r2
-      WHERE r2.previous_rank_id = rt.rank_title_id
+      WHERE r2.previous_rank_id = rt.rank_title_id --смотрим где есть след разряд, если след разряда нет, то наибольший разряд
 )
 GROUP BY c.club_id, c.name
 HAVING COUNT(DISTINCT m.tournament_id) >= 2;
 
 альтернативный вариант
-Использование оконной функции в подзапросе
+Использование оконной функции
 
 SELECT DISTINCT c.name
 FROM Club c
@@ -667,6 +669,7 @@ GROUP BY c.club_id, c.name
 HAVING COUNT(DISTINCT m.tournament_id) >= 2;
 
 38. Выбрать все данные спонсора, который каждый год делает взносы с момента образования клуба. 
+рекурсивно насобирать года и проверить на вычитание годов, если множество окажется пустым, то подойдет
 
 SELECT s.*
 FROM Sponsor s
@@ -680,6 +683,7 @@ HAVING COUNT(DISTINCT EXTRACT(YEAR FROM sp.donation_date)) =
 альтернативный вариант
 Для каждого клуба-спонсора считаем количество взносов и сравниваем с количеством лет
 
+поменять экстракт с селектом местами, сначала константа
 SELECT s.*
 FROM Sponsor s
 WHERE NOT EXISTS (
@@ -734,20 +738,34 @@ HAVING COUNT(DISTINCT c.club_id) > 1
 40. Выбрать все данные спонсора, который делает взносы
 для нескольких клубов, но в каждом из этих клубов есть спортсмены с наивысшим разрядом.
 
+можем для каждого клуба посчитать количество спортсменов с наисвысшим разрядом и оно должно быть больше нуля, тогда нам подходит клуб, потом берем спонсора
+смотрим сколько у него спонсируется клубов и если > 2
 SELECT s.*
 FROM Sponsor s
-JOIN Sponsorship sp ON sp.sponsor_id = s.sponsor_id
-JOIN Club c ON c.club_id = sp.club_id
-JOIN Athlete a ON a.club_id = c.club_id
-JOIN Rank r ON r.athlete_id = a.athlete_id
-JOIN Rank_title rt ON rt.rank_title_id = r.rank_title_id
-WHERE NOT EXISTS (
-      SELECT 1
-      FROM Rank_title r2
-      WHERE r2.previous_rank_id = rt.rank_title_id
-)
-GROUP BY s.sponsor_id
-HAVING COUNT(DISTINCT c.club_id) > 1;
+WHERE (
+    -- Сначала находим спонсоров с несколькими клубами
+    SELECT COUNT(DISTINCT sp.club_id)
+    FROM Sponsorship sp
+    WHERE sp.sponsor_id = s.sponsor_id
+) > 1
+AND NOT EXISTS (
+    -- Затем проверяем, что нет клуба без высшего разряда
+    SELECT 1
+    FROM Sponsorship sp
+    JOIN Club c ON c.club_id = sp.club_id
+    WHERE sp.sponsor_id = s.sponsor_id
+    AND NOT EXISTS (
+        SELECT 1
+        FROM Athlete a
+        JOIN Rank r ON r.athlete_id = a.athlete_id
+        JOIN Rank_title rt ON rt.rank_title_id = r.rank_title_id
+        WHERE a.club_id = c.club_id
+        AND NOT EXISTS (
+            SELECT 1 FROM Rank_title rt2
+            WHERE rt2.previous_rank_id = rt.rank_title_id
+        )
+    )
+);
 
 альтернативный вариант
 через COUNT и сравнение количества клубов
@@ -772,7 +790,8 @@ HAVING COUNT(DISTINCT c.club_id) > 1
    END) = COUNT(DISTINCT c.club_id);
 
 41. Выбрать id и фамилию и инициалы спортсменов, название разряда на начало прошлого года.
-
+на 01.01
+можно попробовать через оконки, выбрать первое или через максимум по разрядам
 SELECT 
     a.athlete_id,
     a.last_name || ' ' || LEFT(a.first_name, 1) || '.' AS fio,
@@ -801,7 +820,9 @@ ORDER BY a.athlete_id, r.assignment_date DESC;
 
 42. Выбрать фамилию и инициалы спонсоров, спортсменов и
 работников. В результирующей таблице должно быть два столбца:
-первый – с фамилией и инициалами, а во втором необходимо указать, кем является соответствующий человек (спонсором, владельцем, работником). Результат отсортировать по фамилии в
+первый – с фамилией и инициалами, а во втором необходимо указать, 
+кем является соответствующий человек (спонсором, владельцем, работником).
+Результат отсортировать по фамилии в
 лексикографическом порядке.
 
 SELECT last_name || ' ' || LEFT(first_name,1) || '.' AS fio, 'Спортсмен'
@@ -908,13 +929,21 @@ SELECT * FROM r;
 47. Выбрать фамилию, имя, отчество спортсмена и названия
 его первой и последней награды.
 
-SELECT a.last_name, a.first_name, a.middle_name,
-       MIN(at.award_name) AS first_award,
-       MAX(at.award_name) AS last_award
+SELECT DISTINCT
+    a.last_name,
+    a.first_name,
+    a.middle_name,
+    FIRST_VALUE(aw.award_date) OVER (
+        PARTITION BY a.athlete_id 
+        ORDER BY aw.award_date
+    ) AS first_award_date,
+    FIRST_VALUE(at.award_name) OVER (
+        PARTITION BY a.athlete_id 
+        ORDER BY aw.award_date DESC
+    ) AS last_award_name
 FROM Athlete a
 JOIN Award aw ON aw.athlete_id = a.athlete_id
-JOIN Award_type at ON at.award_type_id = aw.award_type_id
-GROUP BY a.athlete_id;
+JOIN Award_type at ON at.award_type_id = aw.award_type_id;
 
 альтернативный вариант с лимит
 
@@ -943,7 +972,7 @@ WHERE EXISTS (SELECT 1 FROM Award WHERE athlete_id = a.athlete_id)
 ORDER BY a.last_name, a.first_name;
 
 48. Выбрать спортсмена, который «перепрыгнул» через разряд, т. е. нарушил правильную иерархию разрядов.
-
+взять на планы
 SELECT DISTINCT a.*
 FROM Athlete a
 JOIN Rank r1 ON r1.athlete_id = a.athlete_id
@@ -955,8 +984,12 @@ AND rt1.rank_title_id <> rt2.previous_rank_id;
 
 альтернативный варик
 --
+рекурсия
+мы проверяем что есть первый и третий разряд, но при этом нет второго
+граниченые значения обрабатывать отдельно
 
-49. Выбрать название клуба, количество спортсменов, количество соревнований, в которых клуб принимал участие, общее
+49. Выбрать название клуба, количество спортсменов, количество соревнований,
+в которых клуб принимал участие, общее
 количество соревнований, процент участия в соревнованиях.
 
 SELECT c.name,
@@ -970,7 +1003,7 @@ LEFT JOIN Match m ON m.club1_id = c.club_id OR m.club2_id = c.club_id
 GROUP BY c.club_id;
 
 альтернативный вариант
-с оконными функциями
+подцепить оконки
 
 WITH totals AS (
     SELECT COUNT(*) AS total_matches FROM Match
@@ -1006,6 +1039,7 @@ WHERE NOT EXISTS (
 
 альтернативный вариант
 через сравнение количества клубов
+
 SELECT t.*
 FROM Tournament t
 JOIN Match m ON m.tournament_id = t.tournament_id
@@ -1018,7 +1052,7 @@ HAVING COUNT(DISTINCT
 
 51. Выбрать все данные соревнования, в котором приняло
 участие наибольшее количество клубов. 
-
+надо чтобы лимит выводил все соревнования а не срезал
 SELECT t.*
 FROM Tournament t
 JOIN Match m ON m.tournament_id = t.tournament_id
