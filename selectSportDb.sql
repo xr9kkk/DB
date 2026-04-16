@@ -668,6 +668,23 @@ WHERE NOT EXISTS (
 GROUP BY c.club_id, c.name
 HAVING COUNT(DISTINCT m.tournament_id) >= 2;
 
+
+третий альтернативный вариант
+SELECT c.name
+FROM Club c
+JOIN Athlete a ON a.club_id = c.club_id
+JOIN Rank r ON r.athlete_id = a.athlete_id
+JOIN Rank_title rt ON rt.rank_title_id = r.rank_title_id
+LEFT JOIN Match m1 ON m1.club1_id = c.club_id
+LEFT JOIN Match m2 ON m2.club2_id = c.club_id
+WHERE NOT EXISTS (
+      SELECT 1
+      FROM Rank_title r2
+      WHERE r2.previous_rank_id = rt.rank_title_id
+)
+GROUP BY c.club_id, c.name
+HAVING COUNT(DISTINCT COALESCE(m1.match_id, m2.match_id)) >= 2;
+
 38. Выбрать все данные спонсора, который каждый год делает взносы с момента образования клуба. 
 рекурсивно насобирать года и проверить на вычитание годов, если множество окажется пустым, то подойдет
 
@@ -700,6 +717,38 @@ WHERE NOT EXISTS (
     ) <> (
         EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM c.foundation_date) + 1
     )
+);
+
+третий альтернативный вариант 
+WITH RECURSIVE club_years AS (
+    SELECT 
+        c.club_id,
+        EXTRACT(YEAR FROM c.foundation_date)::int AS y
+    FROM Club c
+
+    UNION ALL
+
+    SELECT
+        club_id,
+        y + 1
+    FROM club_years
+    WHERE y < EXTRACT(YEAR FROM CURRENT_DATE)
+)
+
+SELECT s.*
+FROM Sponsor s
+JOIN Club c ON TRUE
+WHERE NOT EXISTS (
+    SELECT y
+    FROM club_years cy
+    WHERE cy.club_id = c.club_id
+
+    EXCEPT
+
+    SELECT EXTRACT(YEAR FROM sp.donation_date)::int
+    FROM Sponsorship sp
+    WHERE sp.sponsor_id = s.sponsor_id
+      AND sp.club_id = c.club_id
 );
 
 39. Выбрать все данные спонсора, который делает взносы
@@ -789,6 +838,29 @@ HAVING COUNT(DISTINCT c.club_id) > 1
        ) THEN c.club_id 
    END) = COUNT(DISTINCT c.club_id);
 
+третий альтернативный вариант
+WITH ClubsWithTopRank AS (
+    SELECT DISTINCT a.club_id
+    FROM Athlete a
+    JOIN Rank r ON r.athlete_id = a.athlete_id
+    JOIN Rank_title rt ON rt.rank_title_id = r.rank_title_id
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM Rank_title rt2
+        WHERE rt2.previous_rank_id = rt.rank_title_id
+    )
+)
+
+SELECT s.*
+FROM Sponsor s
+JOIN Sponsorship sp ON sp.sponsor_id = s.sponsor_id
+GROUP BY s.sponsor_id
+HAVING COUNT(DISTINCT sp.club_id) > 1
+AND COUNT(DISTINCT sp.club_id) =
+    COUNT(DISTINCT CASE
+        WHEN sp.club_id IN (SELECT club_id FROM ClubsWithTopRank)
+        THEN sp.club_id
+    END);
 41. Выбрать id и фамилию и инициалы спортсменов, название разряда на начало прошлого года.
 на 01.01
 можно попробовать через оконки, выбрать первое или через максимум по разрядам
@@ -817,6 +889,26 @@ JOIN Rank_title rt ON rt.rank_title_id = r.rank_title_id
 WHERE r.assignment_date >= '2024-01-01' 
   AND r.assignment_date < '2025-01-01'
 ORDER BY a.athlete_id, r.assignment_date DESC;
+
+третий альтернативный вариант
+SELECT
+    athlete_id,
+    fio,
+    assignment_date,
+    rank_title
+FROM (
+    SELECT 
+        a.athlete_id,
+        a.last_name || ' ' || LEFT(a.first_name,1) || '.' AS fio,
+        r.assignment_date,
+        rt.rank_title,
+        EXTRACT(YEAR FROM r.assignment_date) AS yr
+    FROM Athlete a
+    JOIN Rank r ON r.athlete_id = a.athlete_id
+    JOIN Rank_title rt ON rt.rank_title_id = r.rank_title_id
+) t
+WHERE yr = 2024
+ORDER BY athlete_id, assignment_date DESC;
 
 42. Выбрать фамилию и инициалы спонсоров, спортсменов и
 работников. В результирующей таблице должно быть два столбца:
@@ -975,18 +1067,40 @@ ORDER BY a.last_name, a.first_name;
 взять на планы
 SELECT DISTINCT a.*
 FROM Athlete a
-JOIN Rank r1 ON r1.athlete_id = a.athlete_id
-JOIN Rank r2 ON r2.athlete_id = a.athlete_id
-JOIN Rank_title rt1 ON rt1.rank_title_id = r1.rank_title_id
-JOIN Rank_title rt2 ON rt2.rank_title_id = r2.rank_title_id
-WHERE rt2.previous_rank_id IS NOT NULL
-AND rt1.rank_title_id <> rt2.previous_rank_id;
+JOIN Rank r ON r.athlete_id = a.athlete_id
+JOIN Rank_title rt ON rt.rank_title_id = r.rank_title_id
+WHERE rt.previous_rank_id IS NOT NULL
+AND NOT EXISTS (
+    SELECT 1
+    FROM Rank r_prev
+    WHERE r_prev.athlete_id = a.athlete_id
+      AND r_prev.rank_title_id = rt.previous_rank_id
+);
 
 альтернативный варик
---
-рекурсия
-мы проверяем что есть первый и третий разряд, но при этом нет второго
-граниченые значения обрабатывать отдельно
+
+WITH RECURSIVE rank_chain AS (
+    SELECT rank_title_id, rank_title, previous_rank_id, 1 AS lvl
+    FROM Rank_title
+    WHERE previous_rank_id IS NULL
+
+    UNION ALL
+
+    SELECT rt.rank_title_id, rt.rank_title, rt.previous_rank_id, rc.lvl + 1
+    FROM Rank_title rt
+             JOIN rank_chain rc ON rt.previous_rank_id = rc.rank_title_id
+)
+SELECT DISTINCT a.*
+FROM Athlete a
+         JOIN Rank r ON r.athlete_id = a.athlete_id
+         JOIN rank_chain rc ON rc.rank_title_id = r.rank_title_id
+WHERE rc.previous_rank_id IS NOT NULL
+  AND NOT EXISTS (
+    SELECT 1
+    FROM Rank r_prev
+    WHERE r_prev.athlete_id = a.athlete_id
+      AND r_prev.rank_title_id = rc.previous_rank_id
+);
 
 49. Выбрать название клуба, количество спортсменов, количество соревнований,
 в которых клуб принимал участие, общее
@@ -1005,21 +1119,68 @@ GROUP BY c.club_id;
 альтернативный вариант
 подцепить оконки
 
-WITH totals AS (
-    SELECT COUNT(*) AS total_matches FROM Match
+WITH club_stats_base AS (
+    SELECT
+        c.club_id,
+        c.name,
+        a.athlete_id,
+        m.match_id,
+        ROW_NUMBER() OVER (
+            PARTITION BY c.club_id, a.athlete_id
+            ORDER BY m.match_id NULLS FIRST
+        ) AS athlete_rn,
+        ROW_NUMBER() OVER (
+            PARTITION BY c.club_id, m.match_id
+            ORDER BY a.athlete_id NULLS FIRST
+        ) AS match_rn
+    FROM Club c
+    LEFT JOIN Athlete a ON a.club_id = c.club_id
+    LEFT JOIN Match m ON c.club_id IN (m.club1_id, m.club2_id)
+),
+club_stats AS (
+    SELECT
+        club_id,
+        name,
+        SUM(
+            CASE
+                WHEN athlete_id IS NOT NULL AND athlete_rn = 1 THEN 1
+                ELSE 0
+            END
+        ) OVER (PARTITION BY club_id) AS athletes,
+        SUM(
+            CASE
+                WHEN match_id IS NOT NULL AND match_rn = 1 THEN 1
+                ELSE 0
+            END
+        ) OVER (PARTITION BY club_id) AS matches,
+        ROW_NUMBER() OVER (PARTITION BY club_id ORDER BY club_id) AS club_rn
+    FROM club_stats_base
+),
+total_matches AS (
+    SELECT total_matches
+    FROM (
+        SELECT
+            COUNT(*) OVER () AS total_matches,
+            ROW_NUMBER() OVER (ORDER BY match_id) AS rn
+        FROM Match
+    ) t
+    WHERE rn = 1
+
+    UNION ALL
+
+    SELECT 0
+    WHERE NOT EXISTS (SELECT 1 FROM Match)
 )
-SELECT 
-    c.name,
-    COUNT(DISTINCT a.athlete_id) AS athletes,
-    COUNT(DISTINCT m.match_id) AS matches,
-    t.total_matches,
-    COUNT(DISTINCT m.match_id) * 100.0 / t.total_matches AS percent
-FROM Club c
-CROSS JOIN totals t
-LEFT JOIN Athlete a ON a.club_id = c.club_id
-LEFT JOIN Match m ON c.club_id IN (m.club1_id, m.club2_id)
-GROUP BY c.club_id, c.name, t.total_matches
-ORDER BY c.name;
+SELECT
+    cs.name,
+    cs.athletes,
+    cs.matches,
+    tm.total_matches,
+    cs.matches * 100.0 / NULLIF(tm.total_matches, 0) AS percent
+FROM club_stats cs
+CROSS JOIN total_matches tm
+WHERE cs.club_rn = 1
+ORDER BY cs.name;
 
 50. Выбрать все данные соревнования, в котором приняли
 участие все клубы.
@@ -1055,20 +1216,62 @@ HAVING COUNT(DISTINCT
 надо чтобы лимит выводил все соревнования а не срезал
 SELECT t.*
 FROM Tournament t
-JOIN Match m ON m.tournament_id = t.tournament_id
-GROUP BY t.tournament_id
-ORDER BY COUNT(DISTINCT m.club1_id) + COUNT(DISTINCT m.club2_id) DESC
-LIMIT 1;
+JOIN (
+    SELECT tournament_id, COUNT(DISTINCT club_id) AS club_count
+    FROM (
+        SELECT tournament_id, club1_id AS club_id
+        FROM Match
+        WHERE club1_id IS NOT NULL
+
+        UNION
+
+        SELECT tournament_id, club2_id AS club_id
+        FROM Match
+        WHERE club2_id IS NOT NULL
+    ) clubs
+    GROUP BY tournament_id
+) tc ON tc.tournament_id = t.tournament_id
+WHERE tc.club_count = (
+    SELECT MAX(club_count)
+    FROM (
+        SELECT tournament_id, COUNT(DISTINCT club_id) AS club_count
+        FROM (
+            SELECT tournament_id, club1_id AS club_id
+            FROM Match
+            WHERE club1_id IS NOT NULL
+
+            UNION
+
+            SELECT tournament_id, club2_id AS club_id
+            FROM Match
+            WHERE club2_id IS NOT NULL
+        ) all_clubs
+        GROUP BY tournament_id
+    ) max_counts
+);
 
 альтернативный вариант
 с использованием оконной функции
 WITH tournament_rank AS (
     SELECT 
         t.*,
-        RANK() OVER (ORDER BY COUNT(DISTINCT m.club1_id) + COUNT(DISTINCT m.club2_id) DESC) AS rnk
+        RANK() OVER (ORDER BY tc.club_count DESC) AS rnk
     FROM Tournament t
-    JOIN Match m ON m.tournament_id = t.tournament_id
-    GROUP BY t.tournament_id
+    JOIN (
+        SELECT tournament_id, COUNT(DISTINCT club_id) AS club_count
+        FROM (
+            SELECT tournament_id, club1_id AS club_id
+            FROM Match
+            WHERE club1_id IS NOT NULL
+
+            UNION
+
+            SELECT tournament_id, club2_id AS club_id
+            FROM Match
+            WHERE club2_id IS NOT NULL
+        ) clubs
+        GROUP BY tournament_id
+    ) tc ON tc.tournament_id = t.tournament_id
 )
 SELECT *
 FROM tournament_rank
