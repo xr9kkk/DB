@@ -669,7 +669,12 @@ GROUP BY c.club_id, c.name
 HAVING COUNT(DISTINCT m.tournament_id) >= 2;
 
 
+Выбрать названия клубов, которые приняли участие в
+двух и более соревнованиях и в которых есть игроки с наибольшим разрядом. 
 третий альтернативный вариант
+альтернативный вариант попробовать через соединение таблиц
+нужно чтобы было два и более матча
+--не очень правильный вариант
 SELECT c.name
 FROM Club c
 JOIN Athlete a ON a.club_id = c.club_id
@@ -685,6 +690,33 @@ WHERE NOT EXISTS (
 GROUP BY c.club_id, c.name
 HAVING COUNT(DISTINCT COALESCE(m1.match_id, m2.match_id)) >= 2;
 
+
+SELECT c.name
+FROM Club c
+JOIN (
+    SELECT DISTINCT a.club_id
+    FROM Athlete a
+    JOIN Rank r ON r.athlete_id = a.athlete_id
+    JOIN Rank_title rt ON rt.rank_title_id = r.rank_title_id
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM Rank_title r2
+        WHERE r2.previous_rank_id = rt.rank_title_id
+    )
+) max_rank_clubs
+    ON max_rank_clubs.club_id = c.club_id
+
+JOIN (
+    SELECT club_id
+    FROM (
+        SELECT club1_id AS club_id, tournament_id FROM Match
+        UNION ALL
+        SELECT club2_id AS club_id, tournament_id FROM Match
+    ) m
+    GROUP BY club_id
+    HAVING COUNT(DISTINCT tournament_id) >= 2
+) match_clubs
+    ON match_clubs.club_id = c.club_id;
 38. Выбрать все данные спонсора, который каждый год делает взносы с момента образования клуба. 
 рекурсивно насобирать года и проверить на вычитание годов, если множество окажется пустым, то подойдет
 
@@ -711,12 +743,12 @@ WHERE NOT EXISTS (
         WHERE sp.sponsor_id = s.sponsor_id AND sp.club_id = c.club_id
     )
     AND (
-        SELECT COUNT(DISTINCT EXTRACT(YEAR FROM sp.donation_date))
-        FROM Sponsorship sp
-        WHERE sp.sponsor_id = s.sponsor_id AND sp.club_id = c.club_id
+	EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM c.foundation_date) + 1
+
     ) <> (
-        EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM c.foundation_date) + 1
-    )
+   SELECT COUNT(DISTINCT EXTRACT(YEAR FROM sp.donation_date))
+        FROM Sponsorship sp
+        WHERE sp.sponsor_id = s.sponsor_id AND sp.club_id = c.club_id    )
 );
 
 третий альтернативный вариант 
@@ -787,7 +819,8 @@ HAVING COUNT(DISTINCT c.club_id) > 1
 40. Выбрать все данные спонсора, который делает взносы
 для нескольких клубов, но в каждом из этих клубов есть спортсмены с наивысшим разрядом.
 
-можем для каждого клуба посчитать количество спортсменов с наисвысшим разрядом и оно должно быть больше нуля, тогда нам подходит клуб, потом берем спонсора
+можем для каждого клуба посчитать количество спортсменов с наисвысшим разрядом и оно должно быть больше нуля,
+тогда нам подходит клуб, потом берем спонсора
 смотрим сколько у него спонсируется клубов и если > 2
 SELECT s.*
 FROM Sponsor s
@@ -902,13 +935,17 @@ FROM (
         a.last_name || ' ' || LEFT(a.first_name,1) || '.' AS fio,
         r.assignment_date,
         rt.rank_title,
-        EXTRACT(YEAR FROM r.assignment_date) AS yr
+        ROW_NUMBER() OVER (
+            PARTITION BY a.athlete_id
+            ORDER BY r.assignment_date DESC
+        ) AS rn
     FROM Athlete a
     JOIN Rank r ON r.athlete_id = a.athlete_id
     JOIN Rank_title rt ON rt.rank_title_id = r.rank_title_id
+    WHERE EXTRACT(YEAR FROM r.assignment_date) = 2024
 ) t
-WHERE yr = 2024
-ORDER BY athlete_id, assignment_date DESC;
+WHERE rn = 1
+ORDER BY athlete_id;
 
 42. Выбрать фамилию и инициалы спонсоров, спортсменов и
 работников. В результирующей таблице должно быть два столбца:
@@ -1014,8 +1051,6 @@ WITH RECURSIVE r AS (
     JOIN r ON rt.previous_rank_id = r.rank_title_id
 )
 SELECT * FROM r;
-
-альтернативный вариант хмммм
 
 
 47. Выбрать фамилию, имя, отчество спортсмена и названия
