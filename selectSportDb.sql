@@ -48,9 +48,9 @@ SELECT *
 FROM Tournament;
 -- 7. Выбрать id_стадиона, у которого нет адреса в БД.
 -- venue_address - NOT NULL
-SELECT tournament_id
-FROM Tournament
-WHERE venue_address IS NULL OR venue_address = '';
+-- SELECT tournament_id
+--FROM Tournament
+-- WHERE venue_address IS NULL OR venue_address = '';
 
 -- 8. Выбрать годы рождения спортсменов без повторений. Результат отсортировать в порядке возрастания.
 SELECT DISTINCT EXTRACT(YEAR FROM birth_date) as birth_year 
@@ -690,7 +690,7 @@ WHERE NOT EXISTS (
 GROUP BY c.club_id, c.name
 HAVING COUNT(DISTINCT COALESCE(m1.match_id, m2.match_id)) >= 2;
 
-
+-- хороший альтернативный вариант
 SELECT c.name
 FROM Club c
 JOIN (
@@ -732,23 +732,23 @@ HAVING COUNT(DISTINCT EXTRACT(YEAR FROM sp.donation_date)) =
 альтернативный вариант
 Для каждого клуба-спонсора считаем количество взносов и сравниваем с количеством лет
 
-поменять экстракт с селектом местами, сначала константа
 SELECT s.*
 FROM Sponsor s
 WHERE NOT EXISTS (
     SELECT 1
     FROM Club c
     WHERE EXISTS (
-        SELECT 1 FROM Sponsorship sp 
+        SELECT 1 FROM Sponsorship sp
         WHERE sp.sponsor_id = s.sponsor_id AND sp.club_id = c.club_id
     )
-    AND (
-	EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM c.foundation_date) + 1
-
-    ) <> (
-   SELECT COUNT(DISTINCT EXTRACT(YEAR FROM sp.donation_date))
-        FROM Sponsorship sp
-        WHERE sp.sponsor_id = s.sponsor_id AND sp.club_id = c.club_id    )
+      AND (
+              (SELECT EXTRACT(YEAR FROM CURRENT_DATE)) -
+              (SELECT EXTRACT(YEAR FROM c.foundation_date)) + 1
+              ) <> (
+              SELECT COUNT(DISTINCT EXTRACT(YEAR FROM sp.donation_date))
+              FROM Sponsorship sp
+              WHERE sp.sponsor_id = s.sponsor_id AND sp.club_id = c.club_id
+          )
 );
 
 третий альтернативный вариант 
@@ -821,7 +821,7 @@ HAVING COUNT(DISTINCT c.club_id) > 1
 
 можем для каждого клуба посчитать количество спортсменов с наисвысшим разрядом и оно должно быть больше нуля,
 тогда нам подходит клуб, потом берем спонсора
-смотрим сколько у него спонсируется клубов и если > 2
+смотрим сколько у него спонсируется клубов и если >= 2
 SELECT s.*
 FROM Sponsor s
 WHERE (
