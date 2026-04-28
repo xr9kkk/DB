@@ -674,22 +674,6 @@ HAVING COUNT(DISTINCT m.tournament_id) >= 2;
 третий альтернативный вариант
 альтернативный вариант попробовать через соединение таблиц
 нужно чтобы было два и более матча
---не очень правильный вариант
-SELECT c.name
-FROM Club c
-JOIN Athlete a ON a.club_id = c.club_id
-JOIN Rank r ON r.athlete_id = a.athlete_id
-JOIN Rank_title rt ON rt.rank_title_id = r.rank_title_id
-LEFT JOIN Match m1 ON m1.club1_id = c.club_id
-LEFT JOIN Match m2 ON m2.club2_id = c.club_id
-WHERE NOT EXISTS (
-      SELECT 1
-      FROM Rank_title r2
-      WHERE r2.previous_rank_id = rt.rank_title_id
-)
-GROUP BY c.club_id, c.name
-HAVING COUNT(DISTINCT COALESCE(m1.match_id, m2.match_id)) >= 2;
-
 -- хороший альтернативный вариант
 SELECT c.name
 FROM Club c
@@ -750,7 +734,6 @@ WHERE NOT EXISTS (
               WHERE sp.sponsor_id = s.sponsor_id AND sp.club_id = c.club_id
           )
 );
-
 третий альтернативный вариант 
 WITH RECURSIVE club_years AS (
     SELECT 
@@ -1038,7 +1021,6 @@ FROM (
 WHERE rn <= 3;
 
 46. Выбрать всю иерархию разрядов.
-
 WITH RECURSIVE r AS (
     SELECT rank_title_id, rank_title, previous_rank_id, 1 AS lvl
     FROM Rank_title
@@ -1140,16 +1122,29 @@ WHERE rc.previous_rank_id IS NOT NULL
 49. Выбрать название клуба, количество спортсменов, количество соревнований,
 в которых клуб принимал участие, общее
 количество соревнований, процент участия в соревнованиях.
-
+можно попробовать через один проход, там где подзапрос оконка 
 SELECT c.name,
        COUNT(DISTINCT a.athlete_id) AS athletes,
        COUNT(DISTINCT m.match_id) AS matches,
        (SELECT COUNT(*) FROM Match) AS total_matches,
        COUNT(DISTINCT m.match_id) * 100.0 / (SELECT COUNT(*) FROM Match) AS percent
 FROM Club c
-LEFT JOIN Athlete a ON a.club_id = c.club_id
-LEFT JOIN Match m ON m.club1_id = c.club_id OR m.club2_id = c.club_id
+JOIN Athlete a ON a.club_id = c.club_id
+JOIN Match m ON m.club1_id = c.club_id OR m.club2_id = c.club_id
 GROUP BY c.club_id;
+
+с оконкой
+SELECT
+    c.name,
+    COUNT(DISTINCT a.athlete_id) AS athletes,
+    COUNT(DISTINCT m.match_id) AS matches,
+    COUNT(*) OVER () AS total_matches,  -- оконная функция вместо подзапроса
+    COUNT(DISTINCT m.match_id) * 100.0 / NULLIF(COUNT(*) OVER (), 0) AS percent
+FROM Club c
+         JOIN Athlete a ON a.club_id = c.club_id
+         JOIN Match m ON m.club1_id = c.club_id OR m.club2_id = c.club_id
+GROUP BY c.club_id;
+
 
 альтернативный вариант
 подцепить оконки
@@ -1249,6 +1244,7 @@ HAVING COUNT(DISTINCT
 51. Выбрать все данные соревнования, в котором приняло
 участие наибольшее количество клубов. 
 надо чтобы лимит выводил все соревнования а не срезал
+написать вариант с цте
 SELECT t.*
 FROM Tournament t
 JOIN (

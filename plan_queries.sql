@@ -1,6 +1,5 @@
 --48
-EXPLAIN
-ANALYZE
+EXPLAIN ANALYZE
 SELECT DISTINCT a.*
 FROM Athlete a
          JOIN Rank r ON r.athlete_id = a.athlete_id
@@ -11,8 +10,8 @@ WHERE rt.previous_rank_id IS NOT NULL
                   WHERE r_prev.athlete_id = a.athlete_id
                     AND r_prev.rank_title_id = rt.previous_rank_id);
 
-EXPLAIN
-ANALYZE WITH RECURSIVE rank_chain AS (
+EXPLAIN ANALYZE
+WITH RECURSIVE rank_chain AS (
     SELECT rank_title_id, rank_title, previous_rank_id, 1 AS lvl
     FROM Rank_title
     WHERE previous_rank_id IS NULL
@@ -36,8 +35,7 @@ WHERE rc.previous_rank_id IS NOT NULL
 
 --51
 
-EXPLAIN
-ANALYZE
+EXPLAIN ANALYZE
 SELECT t.*
 FROM Tournament t
          JOIN (SELECT tournament_id, COUNT(DISTINCT club_id) AS club_count
@@ -66,8 +64,8 @@ WHERE tc.club_count = (SELECT MAX(club_count)
 
 --альтернативный вариант
 --с использованием оконной функции
-EXPLAIN
-ANALYZE WITH tournament_rank AS (
+EXPLAIN ANALYZE
+WITH tournament_rank AS (
     SELECT 
         t.*,
         RANK() OVER (ORDER BY tc.club_count DESC) AS rnk
@@ -93,8 +91,7 @@ FROM tournament_rank
 WHERE rnk = 1;
 
 --49
-EXPLAIN
-ANALYZE WITH club_stats_base AS (
+EXPLAIN ANALYZE WITH club_stats_base AS (
     SELECT
         c.club_id,
         c.name,
@@ -156,9 +153,7 @@ FROM club_stats cs
 WHERE cs.club_rn = 1
 ORDER BY cs.name;
 
-EXPLAIN
-ANALYZE
-SELECT c.name,
+EXPLAIN ANALYZE SELECT c.name,
        COUNT(DISTINCT a.athlete_id)                                      AS athletes,
        COUNT(DISTINCT m.match_id)                                        AS matches,
        (SELECT COUNT(*) FROM Match)                                      AS total_matches,
