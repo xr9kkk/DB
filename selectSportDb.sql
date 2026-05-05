@@ -1134,6 +1134,7 @@ JOIN Match m ON m.club1_id = c.club_id OR m.club2_id = c.club_id
 GROUP BY c.club_id;
 
 с оконкой
+--можно отказать от групп бай
 SELECT
     c.name,
     COUNT(DISTINCT a.athlete_id) AS athletes,
@@ -1211,6 +1212,55 @@ FROM club_stats cs
 CROSS JOIN total_matches tm
 WHERE cs.club_rn = 1
 ORDER BY cs.name;
+
+WITH t AS (
+    SELECT
+        c.club_id,
+        c.name,
+        a.athlete_id,
+        m.match_id,
+
+        ROW_NUMBER() OVER (
+            PARTITION BY c.club_id, a.athlete_id
+            ORDER BY a.athlete_id
+            ) AS rn_athlete,
+
+        ROW_NUMBER() OVER (
+            PARTITION BY c.club_id, m.match_id
+            ORDER BY m.match_id
+            ) AS rn_match,
+
+        ROW_NUMBER() OVER (
+            PARTITION BY m.match_id
+            ORDER BY m.match_id
+            ) AS rn_total_match
+    FROM Club c
+             JOIN Athlete a ON a.club_id = c.club_id
+             JOIN Match m ON m.club1_id = c.club_id
+        OR m.club2_id = c.club_id
+),
+     t2 AS (
+         SELECT
+             club_id,
+             name,
+
+             SUM(CASE WHEN rn_athlete = 1 THEN 1 ELSE 0 END)
+             OVER (PARTITION BY club_id) AS athletes,
+
+             SUM(CASE WHEN rn_match = 1 THEN 1 ELSE 0 END)
+             OVER (PARTITION BY club_id) AS matches,
+
+             SUM(CASE WHEN rn_total_match = 1 THEN 1 ELSE 0 END)
+             OVER () AS total_matches
+         FROM t
+     )
+SELECT DISTINCT
+    name,
+    athletes,
+    matches,
+    total_matches,
+    matches * 100.0 / NULLIF(total_matches, 0) AS percent
+FROM t2;
 
 50. Выбрать все данные соревнования, в котором приняли
 участие все клубы.
