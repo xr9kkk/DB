@@ -853,6 +853,7 @@ HAVING COUNT(DISTINCT c.club_id) > 1
            )
        ) THEN c.club_id 
    END) = COUNT(DISTINCT c.club_id);
+ANALYZE;
 
 третий альтернативный вариант
 WITH ClubsWithTopRank AS (
