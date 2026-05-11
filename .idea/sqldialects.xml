@@ -2,7 +2,9 @@
 <project version="4">
   <component name="SqlDialectMappings">
     <file url="file://$PROJECT_DIR$/CREATE INSERT SELECTS/selectSportDb.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/CTE_LAB/cte_queries.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/PLANS/plan_queries.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/SCRIPTS FOR PLANS/plan_benchmark_data.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/WINDOW_LAB/window_queries.sql" dialect="PostgreSQL" />
   </component>
 </project>

@@ -740,7 +740,7 @@ WITH RECURSIVE club_years AS (
         c.club_id,
         EXTRACT(YEAR FROM c.foundation_date)::int AS y
     FROM Club c
-
+ 
     UNION ALL
 
     SELECT

@@ -49,31 +49,31 @@ FROM (SELECT *, ROW_NUMBER() OVER (ORDER BY height DESC) AS rn
       FROM Athlete) t
 WHERE rn <= 3;
 
---41. Выбрать id и фамилию и инициалы спортсменов, название разряда на начало прошлого года.
---на 01.01
---можно попробовать через оконки, выбрать первое или через максимум по разрядам
-EXPLAIN ANALYZE
-SELECT a.athlete_id,
-       a.last_name || ' ' || LEFT(a.first_name, 1) || '.' AS fio,
-       r.assignment_date,
-       rt.rank_title
-FROM Athlete a
-         JOIN Rank r ON r.athlete_id = a.athlete_id
-         JOIN Rank_title rt ON rt.rank_title_id = r.rank_title_id
-WHERE EXTRACT(YEAR FROM r.assignment_date) = 2024
-ORDER BY a.athlete_id, r.assignment_date DESC;
+--50. Выбрать все данные соревнования, в котором приняли
+--участие все клубы.
+
+EXPLAIN ANALYZE SELECT t.*
+FROM Tournament t
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM Club c
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM Match m
+        WHERE m.tournament_id = t.tournament_id
+        AND (m.club1_id = c.club_id OR m.club2_id = c.club_id)
+    )
+);
 
 --альтернативный вариант
---через  >= < самый результативный, если есть индекс по дате присвоения
+--через сравнение количества клубов
 
-EXPLAIN ANALYZE
-SELECT a.athlete_id,
-       a.last_name || ' ' || LEFT(a.first_name, 1) || '.' AS fio,
-       r.assignment_date,
-       rt.rank_title
-FROM Athlete a
-         JOIN Rank r ON r.athlete_id = a.athlete_id
-         JOIN Rank_title rt ON rt.rank_title_id = r.rank_title_id
-WHERE r.assignment_date >= '2024-01-01'
-  AND r.assignment_date < '2025-01-01'
-ORDER BY a.athlete_id, r.assignment_date DESC;
+EXPLAIN ANALYZE SELECT t.*
+FROM Tournament t
+         JOIN Match m ON m.tournament_id = t.tournament_id
+GROUP BY t.tournament_id
+HAVING COUNT(DISTINCT
+             CASE WHEN m.club1_id IS NOT NULL THEN m.club1_id
+                  WHEN m.club2_id IS NOT NULL THEN m.club2_id
+                 END
+       ) = (SELECT COUNT(*) FROM Club);
