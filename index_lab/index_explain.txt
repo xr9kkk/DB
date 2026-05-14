@@ -1,0 +1,262 @@
+ОТЧЕТ ПО ИНДЕКСАМ
+
+В лабораторной работе сравнивались две таблицы с одинаковыми данными:
+
+- athlete_no_index - таблица без дополнительных индексов;
+- athlete_with_index - таблица с индексами.
+
+Скрипт был исправлен так, чтобы сравнение было корректным. Для создания
+таблиц не используется LIKE Athlete INCLUDING ALL, потому что INCLUDING ALL
+копирует индексы исходной таблицы. Из-за этого таблица, которая должна была
+быть "без индексов", могла фактически получить индексы от Athlete.
+
+Теперь таблицы создаются так:
+
+CREATE TABLE athlete_no_index
+(LIKE Athlete INCLUDING DEFAULTS INCLUDING CONSTRAINTS);
+
+CREATE TABLE athlete_with_index
+(LIKE Athlete INCLUDING DEFAULTS INCLUDING CONSTRAINTS);
+
+После этого индексы создаются только на athlete_with_index:
+
+CREATE INDEX idx_athlete_last_name ON athlete_with_index(last_name);
+CREATE INDEX idx_athlete_birth_date ON athlete_with_index(birth_date);
+
+Проверка через pg_indexes показала:
+
+- у athlete_no_index индексов нет;
+- у athlete_with_index есть idx_athlete_last_name и idx_athlete_birth_date.
+
+Это важно, потому что теперь сравнение действительно показывает разницу между
+таблицей без индексов и таблицей с индексами.
+
+1. SELECT по индексируемому столбцу
+
+Запрос к таблице с индексом:
+
+SELECT *
+FROM athlete_with_index
+WHERE last_name = 'Kozlov';
+
+План:
+
+Index Scan using idx_athlete_last_name on athlete_with_index
+  Index Cond: last_name = 'Kozlov'
+Execution Time: 0.046 ms
+
+PostgreSQL использовал индекс idx_athlete_last_name. Вместо полного просмотра
+таблицы он быстро нашел нужное значение в индексе и получил соответствующую
+строку.
+
+Запрос к таблице без индекса:
+
+SELECT *
+FROM athlete_no_index
+WHERE last_name = 'Kozlov';
+
+План:
+
+Seq Scan on athlete_no_index
+  Filter: last_name = 'Kozlov'
+  Rows Removed by Filter: 72086
+Execution Time: 3.164 ms
+
+Так как индекса нет, PostgreSQL выполнил последовательное сканирование всей
+таблицы. Он нашел одну подходящую строку, а 72086 строк отбросил фильтром.
+
+Вывод: индекс хорошо ускоряет точечный поиск, когда условие возвращает малую
+часть таблицы.
+
+2. Индекс есть, но PostgreSQL его не использует
+
+Запрос:
+
+SELECT *
+FROM athlete_with_index
+WHERE birth_date > '2000-01-01';
+
+На таблице есть индекс idx_athlete_birth_date, но план такой:
+
+Seq Scan on athlete_with_index
+  Filter: birth_date > '2000-01-01'
+  Rows Removed by Filter: 23768
+Execution Time: 5.620 ms
+
+Индекс не был использован, потому что условие возвращает большую часть таблицы:
+48319 строк. В такой ситуации PostgreSQL считает, что последовательное чтение
+таблицы дешевле, чем проход по индексу с последующим чтением большого числа
+строк из таблицы.
+
+Вывод: наличие индекса не гарантирует его использование. Оптимизатор выбирает
+индекс только тогда, когда ожидает от него выигрыш.
+
+3. UPDATE неиндексируемого столбца
+
+Для DML-примеров были добавлены тестовые строки. Затем выполнялось обновление
+поля height:
+
+UPDATE athlete_no_index
+SET height = height + 1
+WHERE last_name = 'DmlUpdate';
+
+План для таблицы без индекса:
+
+Update on athlete_no_index
+  -> Seq Scan on athlete_no_index
+       Filter: last_name = 'DmlUpdate'
+       Rows Removed by Filter: 77087
+Execution Time: 10.936 ms
+
+Таблица без индекса должна была просмотреть все строки, чтобы найти 5000 строк
+с last_name = 'DmlUpdate'.
+
+Аналогичный запрос к таблице с индексом:
+
+UPDATE athlete_with_index
+SET height = height + 1
+WHERE last_name = 'DmlUpdate';
+
+План:
+
+Update on athlete_with_index
+  -> Bitmap Heap Scan on athlete_with_index
+       Recheck Cond: last_name = 'DmlUpdate'
+       -> Bitmap Index Scan on idx_athlete_last_name
+Execution Time: 25.562 ms
+
+PostgreSQL использовал индекс для поиска строк. Это видно по Bitmap Index Scan
+on idx_athlete_last_name. Однако общее время оказалось больше, чем у таблицы
+без индекса.
+
+Причина: UPDATE - это не только поиск строк, но и физическое изменение данных.
+Даже если индекс помог найти строки, операция записи может быть дороже из-за
+поддержки структуры таблицы и индексов. Поэтому для DML важно смотреть не
+только на способ поиска строк, но и на итоговое время операции.
+
+Вывод: индекс может ускорить поиск строк для UPDATE, но сама операция
+обновления в таблице с индексами может быть дороже.
+
+4. UPDATE индексируемого столбца
+
+Затем обновлялся столбец last_name, по которому в athlete_with_index есть
+индекс:
+
+UPDATE athlete_no_index
+SET last_name = 'DmlUpdated'
+WHERE first_name = 'DmlUpdateGroup';
+
+Для таблицы без индекса:
+
+Update on athlete_no_index
+  -> Seq Scan on athlete_no_index
+Execution Time: 10.829 ms
+
+Для таблицы с индексом:
+
+Update on athlete_with_index
+  -> Seq Scan on athlete_with_index
+Execution Time: 29.337 ms
+
+В обоих случаях поиск выполнялся через Seq Scan, потому что условие задано по
+first_name, а индекса по first_name нет. Но в таблице athlete_with_index
+изменялся столбец last_name, который входит в индекс idx_athlete_last_name.
+
+Поэтому PostgreSQL должен был обновить не только строки таблицы, но и записи в
+индексе. Из-за этого операция с индексом заняла больше времени.
+
+Вывод: изменение индексируемого столбца обычно дороже, потому что индекс тоже
+нужно поддерживать в актуальном состоянии.
+
+5. DELETE существующих строк
+
+В исправленном скрипте DELETE удаляет реально существующие тестовые строки:
+
+DELETE FROM athlete_no_index
+WHERE first_name = 'DmlDeleteGroup';
+
+DELETE FROM athlete_with_index
+WHERE first_name = 'DmlDeleteGroup';
+
+Для таблицы без индексов:
+
+Delete on athlete_no_index
+  -> Seq Scan on athlete_no_index
+Execution Time: 5.683 ms
+
+Для таблицы с индексами:
+
+Delete on athlete_with_index
+  -> Seq Scan on athlete_with_index
+Execution Time: 6.000 ms
+
+Оба запроса нашли и удалили 5000 строк. Условие задано по first_name, а индекса
+по этому столбцу нет, поэтому в обоих случаях использовался Seq Scan.
+
+Таблица с индексами выполнила удаление немного медленнее. Это нормально: при
+удалении строки PostgreSQL должен учитывать не только саму таблицу, но и
+индексные записи, связанные с удаляемыми строками.
+
+Вывод: DELETE может ускоряться индексом, если индекс помогает найти удаляемые
+строки. Но само удаление в таблице с индексами имеет дополнительные расходы на
+обслуживание индексов.
+
+6. INSERT в таблицу без индексов и с индексами
+
+Вставка 10000 строк в таблицу без индексов:
+
+Insert on athlete_no_index
+Execution Time: 13.472 ms
+
+Вставка 10000 строк в таблицу с индексами:
+
+Insert on athlete_with_index
+Execution Time: 75.877 ms
+
+Разница значительная. При вставке в athlete_no_index PostgreSQL добавляет
+строки только в таблицу. При вставке в athlete_with_index PostgreSQL должен
+добавить каждую строку не только в таблицу, но и в индексы:
+
+- idx_athlete_last_name;
+- idx_athlete_birth_date.
+
+В плане также видно больше обращений к буферам для таблицы с индексами:
+
+- athlete_no_index: shared hit=20266;
+- athlete_with_index: shared hit=70414.
+
+Вывод: INSERT в таблицу с индексами обычно медленнее, потому что каждый индекс
+нужно обновлять при добавлении новых строк.
+
+7. Общий вывод
+
+Индексы ускоряют чтение и поиск, когда запрос выбирает небольшую часть таблицы.
+Это видно на примере last_name = 'Kozlov':
+
+- с индексом: Index Scan, 0.046 ms;
+- без индекса: Seq Scan, 3.164 ms.
+
+Но индексы не всегда используются. Если условие возвращает большую часть
+таблицы, как в запросе birth_date > '2000-01-01', PostgreSQL может выбрать
+Seq Scan, потому что он дешевле.
+
+Для DML-операций индексы имеют двойственный эффект:
+
+- могут ускорить поиск строк для UPDATE или DELETE;
+- замедляют изменение данных, потому что индексы нужно поддерживать.
+
+Особенно хорошо это видно на INSERT:
+
+- без индексов: 13.472 ms;
+- с индексами: 75.877 ms.
+
+И на UPDATE индексируемого столбца last_name:
+
+- без индексов: 10.829 ms;
+- с индексом по last_name: 29.337 ms.
+
+Таким образом, индексы не нужно создавать на каждый столбец. Их стоит
+создавать для тех полей, которые часто используются в WHERE, JOIN, ORDER BY и
+при этом позволяют выбрать относительно небольшую часть таблицы. При этом
+нужно учитывать, что каждый дополнительный индекс увеличивает стоимость
+INSERT, UPDATE и DELETE.

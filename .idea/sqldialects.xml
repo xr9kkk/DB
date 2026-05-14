@@ -6,6 +6,8 @@
     <file url="file://$PROJECT_DIR$/PLANS/plan_queries.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/SCRIPTS FOR PLANS/plan_benchmark_data.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/WINDOW_LAB/window_queries.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/index_lab/index_queries.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/partitioning_lab/part_queries.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/view_lab/view_queries.sql" dialect="PostgreSQL" />
   </component>
 </project>
