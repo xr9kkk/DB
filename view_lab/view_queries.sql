@@ -37,7 +37,7 @@ FROM v_club_athlete_count
 WHERE athlete_count > 5;
 --Ожидаемый план: Фильтр athlete_count > 5 применяется внутри группировки (или сразу после), трансформация произошла.
 
-/*CREATE MATERIALIZED VIEW mv_athlete_awards AS
+CREATE MATERIALIZED VIEW mv_athlete_awards AS
 SELECT a.athlete_id,
        a.last_name,
        a.first_name,
@@ -50,7 +50,7 @@ FROM Athlete a
          JOIN Club c ON a.club_id = c.club_id
          LEFT JOIN Award aw ON a.athlete_id = aw.athlete_id
          LEFT JOIN Award_type at ON aw.award_type_id = at.award_type_id
-GROUP BY a.athlete_id, a.last_name, a.first_name, a.middle_name, c.name;*/
+GROUP BY a.athlete_id, a.last_name, a.first_name, a.middle_name, c.name;
 
 -- Запрос к материализованному представлению
 EXPLAIN ANALYZE

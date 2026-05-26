@@ -1,0 +1,106 @@
+ANALYZE
+CREATE VIEW
+                                                                          QUERY PLAN                                                                          
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Subquery Scan on v_athlete_rank_stats  (cost=12.04..16.63 rows=102 width=66) (actual time=0.117..0.160 rows=42 loops=1)
+   ->  WindowAgg  (cost=12.04..15.61 rows=102 width=70) (actual time=0.116..0.156 rows=42 loops=1)
+         Filter: ((row_number() OVER (?)) <= 3)
+         Rows Removed by Filter: 61
+         ->  WindowAgg  (cost=12.04..14.08 rows=102 width=62) (actual time=0.099..0.121 rows=103 loops=1)
+               Run Condition: (row_number() OVER (?) <= 3)
+               ->  Sort  (cost=12.04..12.29 rows=102 width=54) (actual time=0.095..0.099 rows=103 loops=1)
+                     Sort Key: a.club_id, a.birth_date
+                     Sort Method: quicksort  Memory: 31kB
+                     ->  Hash Join  (cost=4.70..8.64 rows=102 width=54) (actual time=0.048..0.070 rows=103 loops=1)
+                           Hash Cond: (a.club_id = c.club_id)
+                           ->  Hash Left Join  (cost=2.48..6.13 rows=102 width=44) (actual time=0.032..0.046 rows=103 loops=1)
+                                 Hash Cond: (a.athlete_id = r.athlete_id)
+                                 ->  Seq Scan on athlete a  (cost=0.00..3.02 rows=102 width=28) (actual time=0.002..0.005 rows=102 loops=1)
+                                 ->  Hash  (cost=2.33..2.33 rows=12 width=20) (actual time=0.025..0.025 rows=12 loops=1)
+                                       Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                       ->  Hash Left Join  (cost=1.16..2.33 rows=12 width=20) (actual time=0.021..0.023 rows=12 loops=1)
+                                             Hash Cond: (r.rank_title_id = rt.rank_title_id)
+                                             ->  Seq Scan on rank r  (cost=0.00..1.12 rows=12 width=8) (actual time=0.001..0.001 rows=12 loops=1)
+                                             ->  Hash  (cost=1.07..1.07 rows=7 width=20) (actual time=0.010..0.010 rows=7 loops=1)
+                                                   Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                                   ->  Seq Scan on rank_title rt  (cost=0.00..1.07 rows=7 width=20) (actual time=0.001..0.002 rows=7 loops=1)
+                           ->  Hash  (cost=1.54..1.54 rows=54 width=14) (actual time=0.013..0.013 rows=54 loops=1)
+                                 Buckets: 1024  Batches: 1  Memory Usage: 11kB
+                                 ->  Seq Scan on club c  (cost=0.00..1.54 rows=54 width=14) (actual time=0.004..0.007 rows=54 loops=1)
+ Planning Time: 0.310 ms
+ Execution Time: 0.208 ms
+(27 rows)
+
+CREATE VIEW
+                                                     QUERY PLAN                                                      
+---------------------------------------------------------------------------------------------------------------------
+ HashAggregate  (cost=6.04..6.71 rows=18 width=22) (actual time=0.047..0.050 rows=3 loops=1)
+   Group Key: c.club_id
+   Filter: (count(a.athlete_id) > 5)
+   Batches: 1  Memory Usage: 24kB
+   Rows Removed by Filter: 51
+   ->  Hash Right Join  (cost=2.21..5.53 rows=102 width=18) (actual time=0.013..0.029 rows=138 loops=1)
+         Hash Cond: (a.club_id = c.club_id)
+         ->  Seq Scan on athlete a  (cost=0.00..3.02 rows=102 width=8) (actual time=0.001..0.005 rows=102 loops=1)
+         ->  Hash  (cost=1.54..1.54 rows=54 width=14) (actual time=0.009..0.009 rows=54 loops=1)
+               Buckets: 1024  Batches: 1  Memory Usage: 11kB
+               ->  Seq Scan on club c  (cost=0.00..1.54 rows=54 width=14) (actual time=0.002..0.004 rows=54 loops=1)
+ Planning Time: 0.075 ms
+ Execution Time: 0.063 ms
+(13 rows)
+
+                                                 QUERY PLAN                                                 
+------------------------------------------------------------------------------------------------------------
+ Seq Scan on mv_athlete_awards  (cost=0.00..3.28 rows=7 width=59) (actual time=0.003..0.008 rows=7 loops=1)
+   Filter: (total_awards > 2)
+   Rows Removed by Filter: 95
+ Planning Time: 0.035 ms
+ Execution Time: 0.011 ms
+(5 rows)
+
+                                                                  QUERY PLAN                                                                  
+----------------------------------------------------------------------------------------------------------------------------------------------
+ GroupAggregate  (cost=13.03..15.84 rows=34 width=61) (actual time=0.104..0.166 rows=7 loops=1)
+   Group Key: a.athlete_id, c.name
+   Filter: (count(DISTINCT aw.award_id) > 2)
+   Rows Removed by Filter: 95
+   ->  Sort  (cost=13.03..13.29 rows=102 width=64) (actual time=0.098..0.102 rows=124 loops=1)
+         Sort Key: a.athlete_id, c.name, aw.award_id
+         Sort Method: quicksort  Memory: 33kB
+         ->  Hash Join  (cost=7.76..9.63 rows=102 width=64) (actual time=0.044..0.069 rows=124 loops=1)
+               Hash Cond: (a.club_id = c.club_id)
+               ->  Hash Right Join  (cost=5.54..7.12 rows=102 width=58) (actual time=0.027..0.043 rows=124 loops=1)
+                     Hash Cond: (aw.athlete_id = a.athlete_id)
+                     ->  Hash Left Join  (cost=1.25..2.74 rows=36 width=27) (actual time=0.006..0.010 rows=36 loops=1)
+                           Hash Cond: (aw.award_type_id = at.award_type_id)
+                           ->  Seq Scan on award aw  (cost=0.00..1.36 rows=36 width=16) (actual time=0.001..0.002 rows=36 loops=1)
+                           ->  Hash  (cost=1.11..1.11 rows=11 width=19) (actual time=0.003..0.003 rows=11 loops=1)
+                                 Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                 ->  Seq Scan on award_type at  (cost=0.00..1.11 rows=11 width=19) (actual time=0.001..0.001 rows=11 loops=1)
+                     ->  Hash  (cost=3.02..3.02 rows=102 width=35) (actual time=0.021..0.021 rows=102 loops=1)
+                           Buckets: 1024  Batches: 1  Memory Usage: 15kB
+                           ->  Seq Scan on athlete a  (cost=0.00..3.02 rows=102 width=35) (actual time=0.002..0.008 rows=102 loops=1)
+               ->  Hash  (cost=1.54..1.54 rows=54 width=14) (actual time=0.012..0.012 rows=54 loops=1)
+                     Buckets: 1024  Batches: 1  Memory Usage: 11kB
+                     ->  Seq Scan on club c  (cost=0.00..1.54 rows=54 width=14) (actual time=0.002..0.004 rows=54 loops=1)
+ Planning Time: 0.185 ms
+ Execution Time: 0.190 ms
+(25 rows)
+
+INSERT 0 1
+ athlete_id | last_name | first_name | middle_name | club_name | total_awards | distinct_award_types | last_award_date 
+------------+-----------+------------+-------------+-----------+--------------+----------------------+-----------------
+        101 | Kozlov    | Ivan       | Sergeevich  | Spartak   |            7 |                    1 | 2026-05-15
+(1 row)
+
+ athlete_id | last_name | first_name | actual_award_count 
+------------+-----------+------------+--------------------
+        101 | Kozlov    | Ivan       |                  8
+(1 row)
+
+REFRESH MATERIALIZED VIEW
+ athlete_id | last_name | first_name | middle_name | club_name | total_awards | distinct_award_types | last_award_date 
+------------+-----------+------------+-------------+-----------+--------------+----------------------+-----------------
+        101 | Kozlov    | Ivan       | Sergeevich  | Spartak   |            8 |                    1 | 2026-05-15
+(1 row)
+
