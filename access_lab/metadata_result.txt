@@ -1,0 +1,91 @@
+ current_database | session_user | current_user 
+------------------+--------------+--------------
+ SportsClubDB     | lab1_admin   | lab1_admin
+(1 row)
+
+     rolname      | rolcanlogin | rolsuper | rolcreatedb | rolcreaterole | rolinherit 
+------------------+-------------+----------+-------------+---------------+------------
+ lab1_admin       | t           | t        | t           | t             | t
+ lab1_analyst     | t           | f        | f           | f             | t
+ lab1_delegate    | t           | f        | f           | f             | t
+ lab1_events      | f           | f        | f           | f             | t
+ lab1_events_user | t           | f        | f           | f             | t
+ lab1_guest       | t           | f        | f           | f             | t
+ lab1_hr          | f           | f        | f           | f             | t
+ lab1_hr_user     | t           | f        | f           | f             | t
+ lab1_read        | f           | f        | f           | f             | t
+(9 rows)
+
+ granted_role |      member      | admin_option | inherit_option | set_option 
+--------------+------------------+--------------+----------------+------------
+ lab1_events  | lab1_events_user | f            | t              | t
+ lab1_hr      | lab1_hr_user     | f            | t              | t
+ lab1_read    | lab1_analyst     | f            | t              | t
+ lab1_read    | lab1_events      | f            | t              | t
+ lab1_read    | lab1_hr          | f            | t              | t
+(5 rows)
+
+ grantor  |   grantee   | table_schema |  table_name  | privilege_type | is_grantable 
+----------+-------------+--------------+--------------+----------------+--------------
+ postgres | lab1_events | public       | match        | INSERT         | NO
+ postgres | lab1_events | public       | match        | UPDATE         | NO
+ postgres | lab1_events | public       | tournament   | INSERT         | NO
+ postgres | lab1_events | public       | tournament   | UPDATE         | NO
+ postgres | lab1_hr     | public       | employee     | INSERT         | NO
+ postgres | lab1_hr     | public       | employee     | SELECT         | NO
+ postgres | lab1_hr     | public       | employee     | UPDATE         | NO
+ postgres | lab1_read   | public       | award_type   | SELECT         | NO
+ postgres | lab1_read   | public       | city         | SELECT         | NO
+ postgres | lab1_read   | public       | club         | SELECT         | NO
+ postgres | lab1_read   | public       | country      | SELECT         | NO
+ postgres | lab1_read   | public       | gameposition | SELECT         | NO
+ postgres | lab1_read   | public       | match        | SELECT         | NO
+ postgres | lab1_read   | public       | position     | SELECT         | NO
+ postgres | lab1_read   | public       | rank_title   | SELECT         | NO
+ postgres | lab1_read   | public       | region       | SELECT         | NO
+ postgres | lab1_read   | public       | stadion      | SELECT         | NO
+ postgres | lab1_read   | public       | tournament   | SELECT         | NO
+(18 rows)
+
+     rolname      | tablename | can_select | can_insert | can_update | can_delete 
+------------------+-----------+------------+------------+------------+------------
+ lab1_admin       | club      | t          | t          | t          | t
+ lab1_admin       | employee  | t          | t          | t          | t
+ lab1_admin       | match     | t          | t          | t          | t
+ lab1_admin       | owner     | t          | t          | t          | t
+ lab1_analyst     | club      | t          | f          | f          | f
+ lab1_analyst     | employee  | f          | f          | f          | f
+ lab1_analyst     | match     | t          | f          | f          | f
+ lab1_analyst     | owner     | f          | f          | f          | f
+ lab1_delegate    | club      | f          | f          | f          | f
+ lab1_delegate    | employee  | f          | f          | f          | f
+ lab1_delegate    | match     | f          | f          | f          | f
+ lab1_delegate    | owner     | f          | f          | f          | f
+ lab1_events_user | club      | t          | f          | f          | f
+ lab1_events_user | employee  | f          | f          | f          | f
+ lab1_events_user | match     | t          | t          | t          | f
+ lab1_events_user | owner     | f          | f          | f          | f
+ lab1_guest       | club      | f          | f          | f          | f
+ lab1_guest       | employee  | f          | f          | f          | f
+ lab1_guest       | match     | f          | f          | f          | f
+ lab1_guest       | owner     | f          | f          | f          | f
+ lab1_hr_user     | club      | t          | f          | f          | f
+ lab1_hr_user     | employee  | t          | t          | t          | f
+ lab1_hr_user     | match     | t          | f          | f          | f
+ lab1_hr_user     | owner     | f          | f          | f          | f
+(24 rows)
+
+                                   Access privileges
+ Schema |   Name   | Type  |     Access privileges      | Column privileges | Policies 
+--------+----------+-------+----------------------------+-------------------+----------
+ public | employee | table | postgres=arwdDxtm/postgres+|                   | 
+        |          |       | lab1_hr=arw/postgres       |                   | 
+(1 row)
+
+                                          Access privileges
+ Schema |           Name           |   Type   |   Access privileges   | Column privileges | Policies 
+--------+--------------------------+----------+-----------------------+-------------------+----------
+ public | employee_employee_id_seq | sequence | postgres=rwU/postgres+|                   | 
+        |                          |          | lab1_hr=U/postgres    |                   | 
+(1 row)
+
