@@ -1,12 +1,12 @@
 \set ON_ERROR_STOP on
--- Run once as postgres, connected to the sports database. Existing roles cause rollback.
+\pset pager off
+-- Initial setup: run as the existing owner of the lab database and tables,
+-- with CREATEDB and CREATEROLE. All lab1_* role names must be unused.
 BEGIN;
-CREATE ROLE lab1_admin LOGIN SUPERUSER CREATEDB CREATEROLE PASSWORD 'admin';
-COMMIT;
--- All further administration is performed as the new DBA.
-\setenv PGPASSWORD admin
-\connect -reuse-previous=on - lab1_admin
-BEGIN;
+CREATE ROLE lab1_admin LOGIN NOSUPERUSER CREATEDB CREATEROLE PASSWORD 'admin';
+-- The current owner needs SET permission to transfer ownership to lab1_admin.
+GRANT lab1_admin TO CURRENT_USER WITH INHERIT FALSE, SET TRUE;
+
 CREATE ROLE lab1_read NOLOGIN;
 CREATE ROLE lab1_hr NOLOGIN;
 CREATE ROLE lab1_events NOLOGIN;
@@ -20,12 +20,15 @@ GRANT lab1_read TO lab1_hr, lab1_events;
 GRANT lab1_read TO lab1_analyst;
 GRANT lab1_hr TO lab1_hr_user;
 GRANT lab1_events TO lab1_events_user;
+-- DBA can manage the lab roles and switch to them for access checks.
+GRANT lab1_read, lab1_hr, lab1_events, lab1_analyst, lab1_hr_user,
+ lab1_events_user, lab1_delegate, lab1_guest TO lab1_admin
+ WITH ADMIN TRUE, INHERIT FALSE, SET TRUE;
 
--- PUBLIC is implicit membership of every user. No explicit deny exists in PostgreSQL.
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 GRANT USAGE ON SCHEMA public TO lab1_read, lab1_delegate, lab1_guest;
-SELECT format('GRANT CONNECT ON DATABASE %I TO lab1_read, lab1_delegate, lab1_guest', current_database()) \gexec
--- Only the original business tables; other labs' tables are not granted.
+SELECT format('GRANT CONNECT ON DATABASE %I TO lab1_read, lab1_delegate, lab1_guest', current_database())
+\gexec
 REVOKE ALL ON public.country, public.region, public.city, public.club,
  public.owner, public.club_owner, public.sponsor, public.sponsor_org,
  public.sponsor_person, public.sponsorship, public.athlete, public.rank_title,
@@ -40,10 +43,23 @@ GRANT USAGE ON SEQUENCE public.employee_employee_id_seq TO lab1_hr;
 GRANT INSERT, UPDATE ON public.match, public.tournament TO lab1_events;
 GRANT USAGE ON SEQUENCE public.match_match_id_seq,
  public.tournament_tournament_id_seq TO lab1_events;
--- New objects are closed until an explicit business decision grants access.
+
+-- Ownership supplies DDL and grant authority, not just data access.
+GRANT USAGE, CREATE ON SCHEMA public TO lab1_admin;
+SELECT format('ALTER TABLE public.%I OWNER TO lab1_admin', table_name)
+FROM unnest(ARRAY['country','region','city','club','owner','club_owner',
+ 'sponsor','sponsor_org','sponsor_person','sponsorship','athlete','rank_title',
+ 'rank','award_type','award','position','employee','match','stadion',
+ 'tournament','gameposition']) AS lab_tables(table_name)
+\gexec
+-- SERIAL sequences owned by table columns follow the table owner automatically.
+ALTER SCHEMA public OWNER TO lab1_admin;
+SELECT format('ALTER DATABASE %I OWNER TO lab1_admin', current_database())
+\gexec
+SET ROLE lab1_admin;
 ALTER DEFAULT PRIVILEGES FOR ROLE lab1_admin IN SCHEMA public
  REVOKE ALL ON TABLES FROM PUBLIC;
 ALTER DEFAULT PRIVILEGES FOR ROLE lab1_admin IN SCHEMA public
  REVOKE ALL ON SEQUENCES FROM PUBLIC;
 COMMIT;
-\echo Roles and business privileges installed.
+RESET ROLE;

@@ -1,6 +1,6 @@
  current_database | session_user | current_user 
 ------------------+--------------+--------------
- SportsClubDB     | lab1_admin   | lab1_admin
+ SportClub        | lab1_admin   | lab1_admin
 (1 row)
 
      rolname      | rolcanlogin | rolsuper | rolcreatedb | rolcreaterole | rolinherit 
