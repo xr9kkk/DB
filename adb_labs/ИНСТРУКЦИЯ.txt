@@ -1,0 +1,4 @@
+Лабораторная 1: lab1/LAB1_INSTRUCTION.md.
+Лабораторная 2: lab2/INSTRUCTION.md.
+Лабораторная 3: lab3/INSTRUCTION.md.
+Лабораторная 4: lab4/INSTRUCTION.md.

@@ -1,0 +1,32 @@
+                                                                  QUERY PLAN                                                                   
+-----------------------------------------------------------------------------------------------------------------------------------------------
+ Index Scan using plan_employee_salary_idx on plan_employee  (cost=0.29..13.35 rows=90 width=8) (actual time=0.012..0.019 rows=100.00 loops=1)
+   Index Cond: (salary > 100000)
+   Index Searches: 1
+   Buffers: shared hit=3
+ Planning:
+   Buffers: shared hit=77
+ Planning Time: 1.088 ms
+ Execution Time: 0.083 ms
+(8 rows)
+
+                                                     QUERY PLAN                                                      
+---------------------------------------------------------------------------------------------------------------------
+ Seq Scan on plan_employee  (cost=0.00..26443.00 rows=33333 width=8) (actual time=0.134..21.835 rows=100.00 loops=1)
+   Filter: lab4.is_high_salary(salary)
+   Rows Removed by Filter: 99900
+   Buffers: shared hit=446
+ Planning Time: 0.021 ms
+ Execution Time: 22.189 ms
+(6 rows)
+
+                oid                 | prokind | prosecdef | provolatile | procost |              proconfig              
+------------------------------------+---------+-----------+-------------+---------+-------------------------------------
+ lab4.employee_salary(integer)      | f       | f         | s           |     100 | 
+ lab4.secret_invoker(integer)       | f       | f         | s           |     100 | {"search_path=pg_catalog, pg_temp"}
+ lab4.secret_definer(integer)       | f       | t         | s           |     100 | {"search_path=pg_catalog, pg_temp"}
+ lab4.is_high_salary(integer)       | f       | f         | i           |     100 | 
+ lab4.raise_salary(integer,numeric) | p       | f         | v           |     100 | 
+ lab4.commit_demo()                 | p       | f         | v           |     100 | 
+(6 rows)
+

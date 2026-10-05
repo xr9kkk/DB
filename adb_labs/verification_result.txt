@@ -1,0 +1,14 @@
+MVCC physical tuples: [(1, '2615', '2626', '(0,3)'), (2, '2615', '0', '(0,2)'), (3, '2626', '0', '(0,3)')]
+PASS snapshot visibility and VACUUM horizon
+PASS READ COMMITTED repeat reads, phantoms
+PASS REPEATABLE READ repeat reads, phantoms
+PASS duty REPEATABLE READ
+PASS duty SERIALIZABLE
+PASS blocking diagnostics: B waits for A
+PASS cancel
+PASS cancel idle holder retains lock
+PASS terminate releases lock
+PASS deadlock 40P01
+PASS invoker denied, definer returns 50000
+PASS raise_salary rollback
+PASS procedure COMMIT and 2D000
