@@ -174,22 +174,6 @@ CREATE TABLE Employee (
 ALTER TABLE Employee ADD CONSTRAINT chk_salary 
 CHECK (salary >= 0);  
 
--- Match
-DROP TABLE IF EXISTS Match CASCADE;
-CREATE TABLE Match (
-    match_id SERIAL PRIMARY KEY,
-    tournament_id INTEGER REFERENCES Tournament(tournament_id),  -- Внешний ключ к турниру
-    club1_id INTEGER REFERENCES Club(club_id),
-    club2_id INTEGER REFERENCES Club(club_id),
-    match_date DATE NOT NULL,
-    match_time TIME NOT NULL,
-    result_1 INTEGER,
-    result_2 INTEGER
-);
-
-ALTER TABLE Match ADD CONSTRAINT chk_clubs_different 
-CHECK (club1_id <> club2_id);
-
 --Stadion
 DROP TABLE IF EXISTS Stadion CASCADE;
 CREATE TABLE Stadion(
@@ -213,6 +197,22 @@ ALTER TABLE Tournament ADD CONSTRAINT chk_tournament_dates
 CHECK (start_date <= end_date);
 
 ALTER TABLE Tournament ADD CONSTRAINT chk_prize_fund CHECK (prize_fund >= 0);
+
+-- Match
+DROP TABLE IF EXISTS Match CASCADE;
+CREATE TABLE Match (
+    match_id SERIAL PRIMARY KEY,
+    tournament_id INTEGER REFERENCES Tournament(tournament_id),  -- Внешний ключ к турниру
+    club1_id INTEGER REFERENCES Club(club_id),
+    club2_id INTEGER REFERENCES Club(club_id),
+    match_date DATE NOT NULL,
+    match_time TIME NOT NULL,
+    result_1 INTEGER,
+    result_2 INTEGER
+);
+
+ALTER TABLE Match ADD CONSTRAINT chk_clubs_different 
+CHECK (club1_id <> club2_id);
 
 DROP TABLE IF EXISTS GamePosition CASCADE;
 CREATE TABLE GamePosition (
